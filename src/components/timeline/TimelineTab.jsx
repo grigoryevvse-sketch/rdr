@@ -90,7 +90,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
 
   return (
     <div className="flex flex-col h-full">
-      <div className={`px-6 py-5 border-b ${theme === 'dark' ? 'border-white/5 bg-[#0f0f15]' : 'border-gray-200 bg-white'}`}>
+      <div className={`safe-header px-6 pb-5 border-b ${theme === 'dark' ? 'border-white/5 bg-[#0f0f15]' : 'border-gray-200 bg-white'}`}>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -152,7 +152,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-6 pb-24 md:pb-8">
+      <div className="safe-scroll-bottom flex-1 overflow-y-auto px-5 sm:px-8 pt-6">
         {dailyTasks.length === 0 ? (
           <div className={`h-full min-h-[18rem] flex flex-col items-center justify-center text-center ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
             <Clock3 size={40} className="mb-3 opacity-60" />

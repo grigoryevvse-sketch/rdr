@@ -69,7 +69,7 @@ function AppContent() {
   // Loading state
   if (authLoading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-[#0d0d14]">
+      <div className="app-viewport flex items-center justify-center bg-[#0d0d14]">
         <Loader2 size={32} className="text-accent animate-spin" />
       </div>
     )
@@ -141,7 +141,7 @@ function AppContent() {
   }
 
   return (
-    <div className={`flex h-screen overflow-hidden
+    <div className={`app-viewport flex overflow-hidden
       ${theme === 'dark' ? 'bg-[#0d0d14]' : 'bg-[#f5f5f7]'}`}>
       {/* Desktop sidebar */}
       <Sidebar />

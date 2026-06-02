@@ -14,10 +14,9 @@ export default function BottomNav() {
   const { activeTab, setTab, theme } = useApp()
 
   return (
-    <nav className={`md:hidden flex items-center justify-around px-2 py-2 border-t
+    <nav className={`safe-bottom-nav md:hidden flex items-center justify-around px-2 pt-2 border-t
       ${theme === 'dark' ? 'bg-[#111118]/90 backdrop-blur-xl border-white/5' : 'bg-white/90 backdrop-blur-xl border-gray-200'}
-      fixed bottom-0 left-0 right-0 z-50`}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
+      fixed bottom-0 left-0 right-0 z-50`}>
       {navItems.map(({ id, label, Icon }) => {
         const isActive = activeTab === id
         return (

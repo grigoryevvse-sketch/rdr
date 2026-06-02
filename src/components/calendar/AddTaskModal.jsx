@@ -60,12 +60,13 @@ function formatDurationLabel(minutes) {
 
 export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask, mode = 'add', showDateField = false }) {
   const { theme, notificationSettings } = useApp()
+  const initialStartTime = normalizeTimeInput(initialTask?.start_time || '09:00')
   const [title, setTitle] = useState(initialTask?.title || '')
   const [date, setDate] = useState(initialTask?.date || selectedDate)
-  const [startTime, setStartTime] = useState(initialTask?.start_time || '09:00')
-  const [exactTimeDraft, setExactTimeDraft] = useState(initialTask?.start_time || '09:00')
+  const [startTime, setStartTime] = useState(initialStartTime)
+  const [exactTimeDraft, setExactTimeDraft] = useState(initialStartTime)
   const [timeInputMode, setTimeInputMode] = useState(
-    initialTask?.start_time && !TIME_OPTIONS.includes(initialTask.start_time) ? 'exact' : 'scroll'
+    initialTask?.start_time && !TIME_OPTIONS.includes(initialStartTime) ? 'exact' : 'scroll'
   )
   const [duration, setDuration] = useState(initialTask?.duration || 30)
   const [durationMode, setDurationMode] = useState(
@@ -94,8 +95,9 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   const isSyncingFromScrollRef = useRef(false)
   const startMinutes = timeToMinutes(startTime)
   const timeOptions = useMemo(() => {
-    if (TIME_OPTIONS.includes(startTime)) return TIME_OPTIONS
-    return [...TIME_OPTIONS, startTime].sort((a, b) => timeToMinutes(a) - timeToMinutes(b))
+    const options = TIME_OPTIONS.includes(startTime) ? TIME_OPTIONS : [...TIME_OPTIONS, startTime]
+    const uniqueOptions = new Map(options.map((option) => [timeToMinutes(option), normalizeTimeInput(option)]))
+    return [...uniqueOptions.values()].sort((a, b) => timeToMinutes(a) - timeToMinutes(b))
   }, [startTime])
   const fieldClass = theme === 'dark'
     ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
@@ -149,12 +151,12 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   function updateExactStartTime(value) {
     const nextValue = value.replace(/[^\d:]/g, '').slice(0, 5)
     setExactTimeDraft(nextValue)
-    if (EXACT_TIME_PATTERN.test(nextValue)) setStartTime(nextValue)
+    if (EXACT_TIME_PATTERN.test(nextValue)) setStartTime(normalizeTimeInput(nextValue))
   }
 
   function commitExactStartTime() {
     if (EXACT_TIME_PATTERN.test(exactTimeDraft)) {
-      setStartTime(exactTimeDraft)
+      setStartTime(normalizeTimeInput(exactTimeDraft))
       return
     }
 
@@ -214,7 +216,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
 
       if (closestTime && closestTime !== startTime) {
         isSyncingFromScrollRef.current = true
-        setStartTime(closestTime)
+        setStartTime(normalizeTimeInput(closestTime))
       }
     })
   }
@@ -225,7 +227,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className={`relative w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto mx-4 rounded-t-3xl md:rounded-3xl p-6
+      <div className={`safe-modal-sheet relative w-full max-w-md overflow-y-auto mx-4 rounded-t-3xl md:rounded-3xl p-6
                        animate-slide-up
                        ${theme === 'dark' ? 'bg-[#1a1a24] border border-white/10' : 'bg-white border border-gray-200'}`}>
         {/* Header */}
@@ -325,8 +327,9 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                             type="button"
                             data-time-option={value}
                             onClick={() => {
-                              setStartTime(value)
-                              setExactTimeDraft(value)
+                              const nextTime = normalizeTimeInput(value)
+                              setStartTime(nextTime)
+                              setExactTimeDraft(nextTime)
                             }}
                             className={`mx-auto h-8 w-full max-w-[13rem] shrink-0 snap-center rounded-full text-center text-xs font-semibold transition-all cursor-pointer
                               ${isSelected

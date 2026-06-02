@@ -1,6 +1,6 @@
 export default function LoginScreen({ onSignIn, authError, isAuthConfigured }) {
   return (
-    <div className="h-screen flex items-center justify-center bg-[#0d0d14] relative overflow-hidden">
+    <div className="app-viewport flex items-center justify-center bg-[#0d0d14] relative overflow-hidden">
       {/* Ambient glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full opacity-20"
            style={{ background: 'radial-gradient(circle, var(--color-accent), transparent 70%)' }} />
@@ -8,10 +8,7 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured }) {
       <div className="relative z-10 text-center animate-fade-in">
         {/* App Logo/Title */}
         <div className="mb-2">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center"
-               style={{ background: 'linear-gradient(135deg, var(--color-accent), #6366f1)' }}>
-            <span className="text-3xl">📋</span>
-          </div>
+          <img src="/favicon.svg" alt="" className="w-20 h-20 mx-auto mb-6 rounded-3xl shadow-2xl shadow-accent/25" />
           <h1 className="text-4xl font-bold text-white mb-2">Structured</h1>
           <p className="text-gray-400 text-lg">Daily Planner</p>
         </div>

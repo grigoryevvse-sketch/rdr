@@ -53,7 +53,7 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className={`px-6 py-5 border-b ${theme === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
+      <div className={`safe-header px-6 pb-5 border-b ${theme === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
         <div className="flex items-center gap-2">
           <Sparkles size={22} className="text-accent" />
           <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -65,7 +65,7 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-24 md:pb-8 space-y-6">
+      <div className="safe-scroll-bottom flex-1 overflow-y-auto px-6 pt-6 space-y-6">
         {/* Prompt input */}
         <PromptInput onSubmit={handleSubmit} isProcessing={isProcessing} />
 

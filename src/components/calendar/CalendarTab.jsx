@@ -91,7 +91,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className={`px-6 pt-4 border-b flex flex-col gap-3 min-h-0
+      <div className={`safe-header-compact px-6 border-b flex flex-col gap-3 min-h-0
         ${isOverviewOpen ? 'flex-1 pb-20 md:pb-4' : 'pb-4'}
         ${theme === 'dark' ? 'border-white/5 bg-[#0f0f15]' : 'border-gray-200 bg-white'}`}>
         

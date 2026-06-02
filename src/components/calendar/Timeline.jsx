@@ -53,7 +53,7 @@ export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask
   }
 
   return (
-    <div ref={containerRef} className="relative overflow-y-auto h-full px-4 pb-24 md:pb-8">
+    <div ref={containerRef} className="safe-scroll-bottom relative overflow-y-auto h-full px-4">
       {/* Hour grid */}
       <div
         className="relative cursor-crosshair"

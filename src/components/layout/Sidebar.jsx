@@ -17,10 +17,7 @@ export default function Sidebar() {
     <aside className={`hidden md:flex flex-col w-[72px] items-center py-6 gap-2 border-r
       ${theme === 'dark' ? 'bg-[#111118] border-white/5' : 'bg-white border-gray-200'}`}>
       {/* App icon */}
-      <div className="w-10 h-10 rounded-xl mb-6 flex items-center justify-center"
-           style={{ background: 'linear-gradient(135deg, var(--color-accent), #6366f1)' }}>
-        <span className="text-lg">📋</span>
-      </div>
+      <img src="/favicon.svg" alt="" className="w-10 h-10 rounded-xl mb-6 shadow-lg shadow-accent/20" />
 
       {/* Nav items */}
       {navItems.map(({ id, label, Icon }) => {

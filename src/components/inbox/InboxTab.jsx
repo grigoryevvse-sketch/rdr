@@ -15,7 +15,7 @@ export default function InboxTab({ inboxTasks, onAddTask, onToggleTask, onDelete
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className={`px-6 py-5 border-b ${theme === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
+      <div className={`safe-header px-6 pb-5 border-b ${theme === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
         <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
           Inbox
         </h1>
@@ -30,7 +30,7 @@ export default function InboxTab({ inboxTasks, onAddTask, onToggleTask, onDelete
       </div>
 
       {/* Task list */}
-      <div className="flex-1 overflow-y-auto px-6 pt-3 pb-24 md:pb-8 space-y-1">
+      <div className="safe-scroll-bottom flex-1 overflow-y-auto px-6 pt-3 space-y-1">
         {pending.length === 0 && completed.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 opacity-40">
             <InboxIcon size={40} className="mb-3" />
