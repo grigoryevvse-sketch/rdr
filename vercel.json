@@ -1,9 +1,3 @@
 {
-  "crons": [
-    {
-      "path": "/api/notification-cron",
-      "schedule": "* * * * *"
-    }
-  ],
   "rewrites": [{ "source": "/(.*)", "destination": "/" }]
 }
