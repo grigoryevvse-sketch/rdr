@@ -6,6 +6,7 @@ import { useApp } from '../../context/AppContext'
 const PIXELS_PER_HOUR = 80
 const MINUTES_PER_DAY = 24 * 60
 const CLICK_TIME_STEP_MINUTES = 5
+const HOUR_LINE_OFFSET = 10
 
 function minutesToTime(totalMinutes) {
   const rounded = Math.round(totalMinutes / CLICK_TIME_STEP_MINUTES) * CLICK_TIME_STEP_MINUTES
@@ -25,7 +26,7 @@ export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask
   // Update "now" line position
   useEffect(() => {
     function updateNow() {
-      setNowPosition(timeToPixels(getCurrentTime24(), PIXELS_PER_HOUR))
+      setNowPosition(HOUR_LINE_OFFSET + timeToPixels(getCurrentTime24(), PIXELS_PER_HOUR))
     }
     updateNow()
     const interval = setInterval(updateNow, 60_000) // every minute
@@ -48,7 +49,7 @@ export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask
 
     const gridRect = e.currentTarget.getBoundingClientRect()
     const y = Math.max(0, Math.min(gridRect.height - 1, e.clientY - gridRect.top))
-    const minutes = (y / PIXELS_PER_HOUR) * 60
+    const minutes = (Math.max(0, y - HOUR_LINE_OFFSET) / PIXELS_PER_HOUR) * 60
     onCreateTaskAtTime(minutesToTime(minutes))
   }
 
@@ -58,7 +59,7 @@ export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask
       <div
         className="relative cursor-crosshair"
         onClick={handleTimelineClick}
-        style={{ height: PIXELS_PER_HOUR * 24 }}
+        style={{ height: HOUR_LINE_OFFSET + PIXELS_PER_HOUR * 24 }}
       >
         {hours.map((hour, i) => (
           <div
@@ -89,6 +90,7 @@ export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask
               task={task}
               selectedDate={selectedDate}
               pixelsPerHour={PIXELS_PER_HOUR}
+              timelineStartOffset={HOUR_LINE_OFFSET}
               onUpdate={(updates) => onUpdateTask(task.id, updates)}
               onEdit={() => onEditTask(task)}
               onDelete={() => onDeleteTask(task.id)}

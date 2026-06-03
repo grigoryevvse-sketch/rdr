@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { AppProvider, useApp } from './context/AppContext'
 import { useAuth } from './hooks/useAuth'
 import { useTasks } from './hooks/useTasks'
-import { useNotificationScheduler } from './hooks/useNotifications'
+import { useNotificationScheduler, usePushSubscription } from './hooks/useNotifications'
+import { isSupabaseConfigured, supabase } from './supabase'
 import { TABS } from './utils/constants'
 
 import LoginScreen from './components/auth/LoginScreen'
@@ -39,8 +40,80 @@ function AppContent() {
     addInboxTask, toggleInboxTask, deleteInboxTask, scheduleInboxTask,
   } = useTasks(effectiveUser)
 
-  const { activeTab, theme, notificationSettings, setTab } = useApp()
-  const notificationControls = useNotificationScheduler(scheduledTasks, notificationSettings)
+  const { activeTab, theme, notificationSettings, setTab, setNotificationSettings } = useApp()
+  const canSyncNotificationSettings = Boolean(
+    isSupabaseConfigured && supabase && effectiveUser?.id && effectiveUser.id !== 'demo'
+  )
+  const clientNotificationSettings = useMemo(() => (
+    canSyncNotificationSettings
+      ? { ...notificationSettings, enabled: false, telegramEnabled: false }
+      : notificationSettings
+  ), [canSyncNotificationSettings, notificationSettings])
+  const notificationControls = useNotificationScheduler(scheduledTasks, clientNotificationSettings)
+  const serverSettingsLoadedRef = useRef(false)
+
+  usePushSubscription(effectiveUser, notificationSettings, notificationControls.permission)
+
+  useEffect(() => {
+    serverSettingsLoadedRef.current = false
+
+    if (!canSyncNotificationSettings) return
+
+    let cancelled = false
+
+    async function loadNotificationSettings() {
+      const { data } = await supabase
+        .from('notification_settings')
+        .select('browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone')
+        .eq('user_id', effectiveUser.id)
+        .maybeSingle()
+
+      if (cancelled) return
+
+      if (data) {
+        const nextSettings = {
+          enabled: Boolean(data.browser_enabled),
+          telegramEnabled: Boolean(data.telegram_enabled),
+          telegramChatId: data.telegram_chat_id || '',
+        }
+
+        if (Array.isArray(data.default_moments)) {
+          nextSettings.defaultMoments = data.default_moments
+        }
+
+        setNotificationSettings(nextSettings)
+      }
+
+      serverSettingsLoadedRef.current = true
+    }
+
+    loadNotificationSettings().catch(() => {
+      serverSettingsLoadedRef.current = true
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [canSyncNotificationSettings, effectiveUser?.id, setNotificationSettings])
+
+  useEffect(() => {
+    if (!canSyncNotificationSettings || !serverSettingsLoadedRef.current) return
+
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+
+    supabase
+      .from('notification_settings')
+      .upsert({
+        user_id: effectiveUser.id,
+        browser_enabled: Boolean(notificationSettings.enabled),
+        telegram_enabled: Boolean(notificationSettings.telegramEnabled && notificationSettings.telegramChatId),
+        telegram_chat_id: notificationSettings.telegramChatId || null,
+        default_moments: notificationSettings.defaultMoments,
+        time_zone: timeZone,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+      .catch(() => {})
+  }, [canSyncNotificationSettings, effectiveUser?.id, notificationSettings])
 
   function handleSignIn(mode) {
     if (mode === 'demo') {

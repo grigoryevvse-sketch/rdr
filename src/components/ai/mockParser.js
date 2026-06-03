@@ -20,8 +20,7 @@ const WEEKDAYS = {
 }
 
 const MODEL_CANDIDATES = [
-  "gemini-3.1-flash-lite",  // Основная: 2 RPM / 500 RPD. Оптимально для скрипта.
-  "gemini-3-flash",         // Запасная: 1 RPM / 20 RPD. Умнее, но квота улетит мгновенно.
+  "gemini-3-flash-preview", // Основная Gemini 3 Flash модель для generateContent.
   "gemini-2.5-flash",       // Фолбэк.
   "gemini-2.5-flash-lite",  // Резервный фолбэк.
 ]

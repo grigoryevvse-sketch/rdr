@@ -50,6 +50,26 @@ export const NOTIFICATION_MOMENTS = [
     description: 'Enough time to prepare',
   },
   {
+    id: 'before1day',
+    label: '1 day before',
+    description: 'A day-ahead reminder',
+  },
+  {
+    id: 'before2days',
+    label: '2 days before',
+    description: 'A two-day heads-up',
+  },
+  {
+    id: 'before1week',
+    label: '1 week before',
+    description: 'Plan ahead for bigger tasks',
+  },
+  {
+    id: 'before1month',
+    label: '1 month before',
+    description: 'A long-range reminder',
+  },
+  {
     id: 'finish',
     label: 'When finished',
     description: 'When the scheduled time ends',

@@ -25,3 +25,20 @@ Task data is stored in Supabase for signed-in users. Browser task storage is onl
 4. Restart the dev server and sign in with Google.
 
 After a successful migration, the app removes the old browser task keys. Demo mode is temporary and does not persist tasks.
+
+## Always-on notifications
+
+Telegram and browser push reminders are sent by the server, so they can still arrive after the app tab is closed.
+
+1. Run `supabase-server-notifications.sql` in the Supabase SQL editor if your project already had the base schema.
+2. Add these environment variables in your deployment:
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `TELEGRAM_BOT_TOKEN`
+   - `VAPID_PUBLIC_KEY`
+   - `VAPID_PRIVATE_KEY`
+   - `VAPID_SUBJECT`, for example `mailto:you@example.com`
+   - `CRON_SECRET`, optional for protecting manual cron calls
+3. Add `VITE_VAPID_PUBLIC_KEY` with the same value as `VAPID_PUBLIC_KEY`.
+4. Redeploy the app. The Vercel cron in `vercel.json` calls `/api/notification-cron` every minute.
+
+You can generate VAPID keys with any standard Web Push key generator, then paste the public key into both `VAPID_PUBLIC_KEY` and `VITE_VAPID_PUBLIC_KEY`.

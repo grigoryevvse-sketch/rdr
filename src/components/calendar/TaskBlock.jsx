@@ -20,13 +20,13 @@ function timeToMinutes(time) {
   return h * 60 + m
 }
 
-export default function TaskBlock({ task, selectedDate, pixelsPerHour, onUpdate, onEdit, onDelete }) {
+export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineStartOffset = 0, onUpdate, onEdit, onDelete }) {
   const [dragPreview, setDragPreview] = useState(null)
   const dragRef = useRef(null)
 
   const displayStartTime = dragPreview?.start_time || task.start_time
   const displayDate = dragPreview?.date || task.date || selectedDate
-  const top = timeToPixels(displayStartTime, pixelsPerHour)
+  const top = timelineStartOffset + timeToPixels(displayStartTime, pixelsPerHour)
   const height = Math.max((task.duration / 60) * pixelsPerHour, 36) // min 36px
   const endTime = getEndTime(displayStartTime, task.duration)
   const isCompleted = Boolean(task.completed)

@@ -8,7 +8,7 @@
 :root {
   --color-accent: #a78bfa;
   --color-accent-light: rgba(167, 139, 250, 0.15);
-  --mobile-nav-height: 5.75rem;
+  --mobile-nav-height: 4.25rem;
 }
 
 /* ─── Base Resets ─── */
@@ -115,11 +115,11 @@
   }
 
   .safe-scroll-bottom {
-    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: var(--mobile-nav-height);
   }
 
   .safe-bottom-nav {
-    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0.5rem;
   }
 
   .safe-modal-sheet {

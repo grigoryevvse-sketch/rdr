@@ -1,4 +1,5 @@
-import { createContext, useContext, useReducer, useEffect } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
 import { TABS, ACCENT_COLORS, DEFAULT_NOTIFICATION_MOMENTS } from '../utils/constants'
 
 const NOTIFICATION_SETTINGS_KEY = 'planner-notification-settings'
@@ -94,15 +95,22 @@ export function AppProvider({ children }) {
     localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(state.notificationSettings))
   }, [state.notificationSettings])
 
-  const setTab = (tab) => dispatch({ type: ACTIONS.SET_TAB, payload: tab })
-  const setTheme = (theme) => dispatch({ type: ACTIONS.SET_THEME, payload: theme })
-  const setAccent = (color) => dispatch({ type: ACTIONS.SET_ACCENT, payload: color })
-  const setNotificationSettings = (settings) => {
+  const setTab = useCallback((tab) => dispatch({ type: ACTIONS.SET_TAB, payload: tab }), [])
+  const setTheme = useCallback((theme) => dispatch({ type: ACTIONS.SET_THEME, payload: theme }), [])
+  const setAccent = useCallback((color) => dispatch({ type: ACTIONS.SET_ACCENT, payload: color }), [])
+  const setNotificationSettings = useCallback((settings) => {
     dispatch({ type: ACTIONS.SET_NOTIFICATION_SETTINGS, payload: settings })
-  }
+  }, [])
+  const value = useMemo(() => ({
+    ...state,
+    setTab,
+    setTheme,
+    setAccent,
+    setNotificationSettings,
+  }), [state, setTab, setTheme, setAccent, setNotificationSettings])
 
   return (
-    <AppContext.Provider value={{ ...state, setTab, setTheme, setAccent, setNotificationSettings }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   )

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { subMonths } from 'date-fns'
+import { isSupabaseConfigured, supabase } from '../supabase'
 import { DEFAULT_NOTIFICATION_MOMENTS } from '../utils/constants'
 import { formatMinutesBefore, isCustomNotificationMoment } from '../utils/notificationUtils'
 import { sendTelegramReminder } from '../utils/telegramUtils'
@@ -7,6 +9,7 @@ const MAX_TIMEOUT_MS = 2_147_483_647
 const DUE_CHECK_INTERVAL_MS = 15_000
 const MISSED_NOTIFICATION_GRACE_MS = 5 * 60_000
 const START_SOUND_FREQUENCIES = [880, 1174.66, 1567.98]
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || ''
 
 function getPermission() {
   if (!('Notification' in window)) return 'unsupported'
@@ -29,6 +32,10 @@ function getMomentDate(task, momentId) {
   }
   if (momentId === 'before10') return new Date(start.getTime() - 10 * 60_000)
   if (momentId === 'before60') return new Date(start.getTime() - 60 * 60_000)
+  if (momentId === 'before1day') return new Date(start.getTime() - 24 * 60 * 60_000)
+  if (momentId === 'before2days') return new Date(start.getTime() - 2 * 24 * 60 * 60_000)
+  if (momentId === 'before1week') return new Date(start.getTime() - 7 * 24 * 60 * 60_000)
+  if (momentId === 'before1month') return subMonths(start, 1)
   if (momentId === 'finish') return new Date(start.getTime() + (Number(task.duration) || 0) * 60_000)
   return start
 }
@@ -40,6 +47,10 @@ function getMomentTitle(momentId, task) {
   }
   if (momentId === 'before10') return `${task.title} starts in 10 minutes`
   if (momentId === 'before60') return `${task.title} starts in 1 hour`
+  if (momentId === 'before1day') return `${task.title} starts in 1 day`
+  if (momentId === 'before2days') return `${task.title} starts in 2 days`
+  if (momentId === 'before1week') return `${task.title} starts in 1 week`
+  if (momentId === 'before1month') return `${task.title} starts in 1 month`
   if (momentId === 'finish') return `${task.title} is finished`
   return `${task.title} is starting`
 }
@@ -71,6 +82,10 @@ function getTelegramMomentText(momentId, task) {
   }
   if (momentId === 'before10') return `${task.title} starts in 10 minutes`
   if (momentId === 'before60') return `${task.title} starts in 1 hour`
+  if (momentId === 'before1day') return `${task.title} starts in 1 day`
+  if (momentId === 'before2days') return `${task.title} starts in 2 days`
+  if (momentId === 'before1week') return `${task.title} starts in 1 week`
+  if (momentId === 'before1month') return `${task.title} starts in 1 month`
   if (momentId === 'finish') return `${task.title} is finished`
   return `${task.title} starts now`
 }
@@ -268,4 +283,59 @@ export function useNotificationScheduler(tasks, settings) {
     supported,
     requestPermission,
   }
+}
+
+export function usePushSubscription(user, settings, permission) {
+  useEffect(() => {
+    if (!settings?.enabled || permission !== 'granted') return
+    if (!user?.id || user.id === 'demo') return
+    if (!isSupabaseConfigured || !supabase || !VAPID_PUBLIC_KEY) return
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+
+    let cancelled = false
+
+    async function subscribe() {
+      const registration = await navigator.serviceWorker.ready
+      let subscription = await registration.pushManager.getSubscription()
+
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        })
+      }
+
+      if (cancelled || !subscription) return
+
+      const payload = subscription.toJSON()
+      await supabase
+        .from('push_subscriptions')
+        .upsert({
+          user_id: user.id,
+          endpoint: payload.endpoint,
+          subscription: payload,
+          enabled: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'endpoint' })
+    }
+
+    subscribe().catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [user, settings?.enabled, permission])
+}
+
+function urlBase64ToUint8Array(value) {
+  const padding = '='.repeat((4 - value.length % 4) % 4)
+  const base64 = `${value}${padding}`.replace(/-/g, '+').replace(/_/g, '/')
+  const raw = window.atob(base64)
+  const output = new Uint8Array(raw.length)
+
+  for (let index = 0; index < raw.length; index += 1) {
+    output[index] = raw.charCodeAt(index)
+  }
+
+  return output
 }

@@ -1,4 +1,4 @@
-const TELEGRAM_API_BASE = 'https://api.telegram.org'
+import { sendTelegramMessage } from './lib/notification-helpers.js'
 
 function sendJson(response, statusCode, body) {
   response.statusCode = statusCode
@@ -53,27 +53,9 @@ export default async function handler(request, response) {
   }
 
   try {
-    const telegramResponse = await fetch(`${TELEGRAM_API_BASE}/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text,
-        disable_web_page_preview: true,
-      }),
-    })
-
-    const result = await telegramResponse.json().catch(() => null)
-
-    if (!telegramResponse.ok) {
-      sendJson(response, telegramResponse.status, {
-        error: result?.description || 'Telegram request failed',
-      })
-      return
-    }
-
+    await sendTelegramMessage(text, chatId)
     sendJson(response, 200, { ok: true })
-  } catch {
-    sendJson(response, 502, { error: 'Telegram request failed' })
+  } catch (error) {
+    sendJson(response, 502, { error: error.message || 'Telegram request failed' })
   }
 }
