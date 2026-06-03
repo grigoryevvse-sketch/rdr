@@ -41,6 +41,7 @@ Telegram and browser push reminders are sent by the server, so they can still ar
    - `VAPID_SUBJECT`, for example `mailto:you@example.com`
    - `CRON_SECRET`, optional for protecting manual cron calls
 3. Add `VITE_VAPID_PUBLIC_KEY` with the same value as `VAPID_PUBLIC_KEY`.
-4. Redeploy the app. The Vercel cron in `vercel.json` calls `/api/notification-cron` every minute.
+4. Redeploy the app.
+5. On Vercel Hobby, create a free external cron job, for example on cron-job.org, that calls `/api/notification-cron?secret=YOUR_CRON_SECRET` every 1-5 minutes. Vercel Hobby cron jobs can only run once per day, so this project keeps the endpoint as a regular API route.
 
 You can generate VAPID keys with any standard Web Push key generator, then paste the public key into both `VAPID_PUBLIC_KEY` and `VITE_VAPID_PUBLIC_KEY`.
