@@ -8,7 +8,7 @@
 :root {
   --color-accent: #a78bfa;
   --color-accent-light: rgba(167, 139, 250, 0.15);
-  --mobile-nav-height: 3.75rem;
+  --mobile-nav-height: calc(3.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* ─── Base Resets ─── */
@@ -31,7 +31,6 @@
     height: 100vh;
     height: -webkit-fill-available;
     height: 100dvh;
-    height: 100svh;
   }
 
   html.light body {
@@ -57,7 +56,6 @@
     height: 100vh;
     height: -webkit-fill-available;
     height: 100dvh;
-    height: 100svh;
     display: flex;
     flex-direction: column;
   }
@@ -104,10 +102,8 @@
   .app-viewport {
     min-height: 100vh;
     min-height: 100dvh;
-    min-height: 100svh;
     height: 100vh;
     height: 100dvh;
-    height: 100svh;
   }
 
   .safe-header {
@@ -123,7 +119,7 @@
   }
 
   .safe-bottom-nav {
-    padding-bottom: 0.25rem;
+    padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px));
   }
 
   .safe-modal-sheet {
