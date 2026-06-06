@@ -110,20 +110,31 @@ function AppContent() {
   useEffect(() => {
     if (!canSyncNotificationSettings || !serverSettingsLoaded) return
 
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    async function saveNotificationSettings() {
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 
-    supabase
-      .from('notification_settings')
-      .upsert({
-        user_id: effectiveUser.id,
-        browser_enabled: Boolean(notificationSettings.enabled),
-        telegram_enabled: Boolean(notificationSettings.telegramEnabled && notificationSettings.telegramChatId),
-        telegram_chat_id: notificationSettings.telegramChatId || null,
-        default_moments: notificationSettings.defaultMoments,
-        time_zone: timeZone,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' })
-      .catch(() => {})
+      try {
+        const { error } = await supabase
+          .from('notification_settings')
+          .upsert({
+            user_id: effectiveUser.id,
+            browser_enabled: Boolean(notificationSettings.enabled),
+            telegram_enabled: Boolean(notificationSettings.telegramEnabled && notificationSettings.telegramChatId),
+            telegram_chat_id: notificationSettings.telegramChatId || null,
+            default_moments: notificationSettings.defaultMoments,
+            time_zone: timeZone,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'user_id' })
+
+        if (error) {
+          console.error('Notification settings sync error:', error)
+        }
+      } catch (error) {
+        console.error('Notification settings sync error:', error)
+      }
+    }
+
+    saveNotificationSettings()
   }, [canSyncNotificationSettings, effectiveUser?.id, notificationSettings, serverSettingsLoaded])
 
   function handleSignIn(mode) {
