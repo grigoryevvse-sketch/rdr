@@ -113,7 +113,7 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
   return (
     <div
       data-task-block
-      className="absolute left-16 right-2 rounded-xl px-3 py-2 flex items-start gap-2.5
+      className="absolute left-16 right-2 rounded-xl px-3 py-2 flex items-center gap-2.5
                  group transition-all duration-200 hover:scale-[1.01] hover:shadow-lg cursor-grab active:cursor-grabbing touch-none"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -135,7 +135,7 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
           onUpdate({ completed: !isCompleted })
         }}
         onPointerDown={(e) => e.stopPropagation()}
-        className="p-1 rounded-lg hover:bg-white/10 transition-all duration-150 flex-shrink-0 cursor-pointer"
+        className="flex h-7 w-7 items-center justify-center rounded-lg hover:bg-white/10 transition-all duration-150 flex-shrink-0 cursor-pointer"
         title={isCompleted ? 'Mark task active' : 'Mark task complete'}
       >
         {isCompleted ? (
@@ -147,7 +147,7 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
 
       {/* Icon */}
       <div
-        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+        className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
         style={{ backgroundColor: accentIconBackground }}
       >
         <IconComponent size={14} style={{ color: accentColor }} />
@@ -179,7 +179,7 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
           onDelete()
         }}
         onPointerDown={(e) => e.stopPropagation()}
-        className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-white/10
+        className="opacity-0 group-hover:opacity-100 flex h-7 w-7 items-center justify-center rounded-lg hover:bg-white/10
                    transition-all duration-150 flex-shrink-0 cursor-pointer"
         title="Delete task"
       >

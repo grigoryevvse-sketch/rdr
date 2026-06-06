@@ -50,12 +50,12 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
     }
   }
 
-  function handlePrevDay() {
-    selectDate(formatDateISO(subDays(selectedDate, 1)))
+  function handlePrevWeek() {
+    selectDate(formatDateISO(subDays(selectedDate, 7)))
   }
 
-  function handleNextDay() {
-    selectDate(formatDateISO(addDays(selectedDate, 1)))
+  function handleNextWeek() {
+    selectDate(formatDateISO(addDays(selectedDate, 7)))
   }
 
   function handlePrevMonth() {
@@ -310,9 +310,10 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
 
               <div className="flex items-center gap-1.5 justify-between">
                 <button
-                  onClick={handlePrevDay}
+                  onClick={handlePrevWeek}
                   className={`p-2 rounded-xl transition-colors cursor-pointer
                     ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+                  title="Previous Week"
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -351,9 +352,10 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                 </div>
 
                 <button
-                  onClick={handleNextDay}
+                  onClick={handleNextWeek}
                   className={`p-2 rounded-xl transition-colors cursor-pointer
                     ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+                  title="Next Week"
                 >
                   <ChevronRight size={18} />
                 </button>

@@ -1,4 +1,4 @@
-import { CalendarDays, Inbox, Check, X, Clock, AlignLeft, Bell, Repeat } from 'lucide-react'
+import { CalendarDays, Inbox, Check, X, Clock, AlignLeft, Bell, Repeat, Trash2 } from 'lucide-react'
 import { format, parseISO, isValid, isToday, isTomorrow } from 'date-fns'
 import { formatTime12h } from '../../utils/dateUtils'
 import { useApp } from '../../context/AppContext'
@@ -86,7 +86,7 @@ function ResultFields({ result, compact = false }) {
   )
 }
 
-export default function ParseResult({ result, onConfirm, onDismiss }) {
+export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem }) {
   const { theme } = useApp()
   const items = result.intent === 'batch' && Array.isArray(result.items)
     ? result.items
@@ -112,9 +112,22 @@ export default function ParseResult({ result, onConfirm, onDismiss }) {
           {items.map((item, index) => (
             <div
               key={`${item.title}-${index}`}
-              className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-black/15' : 'bg-gray-50'}`}
+              className={`flex items-start gap-3 rounded-xl p-3 ${theme === 'dark' ? 'bg-black/15' : 'bg-gray-50'}`}
             >
-              <ResultFields result={item} compact />
+              <div className="min-w-0 flex-1">
+                <ResultFields result={item} compact />
+              </div>
+              <button
+                type="button"
+                onClick={() => onRemoveItem?.(index)}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer
+                  ${theme === 'dark'
+                    ? 'text-gray-500 hover:bg-white/10 hover:text-red-300'
+                    : 'text-gray-400 hover:bg-white hover:text-red-500'}`}
+                title="Remove suggested event"
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           ))}
         </div>

@@ -30,6 +30,13 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
     }
   }
 
+  function handleRemoveResultItem(indexToRemove) {
+    if (!result || result.intent !== 'batch' || !Array.isArray(result.items)) return
+
+    const remainingItems = result.items.filter((_, index) => index !== indexToRemove)
+    setResult(remainingItems.length > 0 ? { ...result, items: remainingItems } : null)
+  }
+
   function handleConfirm() {
     if (!result) return
 
@@ -112,7 +119,12 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
 
         {/* Result */}
         {result && (
-          <ParseResult result={result} onConfirm={handleConfirm} onDismiss={() => setResult(null)} />
+          <ParseResult
+            result={result}
+            onConfirm={handleConfirm}
+            onDismiss={() => setResult(null)}
+            onRemoveItem={handleRemoveResultItem}
+          />
         )}
       </div>
     </div>
