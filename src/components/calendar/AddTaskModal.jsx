@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bell, Clock3, List, Plus, Repeat2, Trash2, X } from 'lucide-react'
-import { DEFAULT_NOTIFICATION_MOMENTS, NOTIFICATION_MOMENTS, TASK_COLORS, TASK_ICONS } from '../../utils/constants'
+import { DEFAULT_NOTIFICATION_MOMENTS, NOTIFICATION_MOMENTS, TASK_ICONS } from '../../utils/constants'
 import { REPEAT_FREQUENCIES } from '../../utils/repeatUtils'
 import {
   addCustomNotificationMoment,
@@ -62,7 +62,7 @@ function formatDurationLabel(minutes) {
 }
 
 export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask, mode = 'add', showDateField = false }) {
-  const { theme, notificationSettings } = useApp()
+  const { accentColor, theme, notificationSettings } = useApp()
   const initialStartTime = normalizeTimeInput(initialTask?.start_time || '09:00')
   const [title, setTitle] = useState(initialTask?.title || '')
   const [date, setDate] = useState(initialTask?.date || selectedDate)
@@ -75,7 +75,6 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   const [durationMode, setDurationMode] = useState(
     DURATION_PRESETS.includes(initialTask?.duration || 30) ? 'preset' : 'custom'
   )
-  const [color, setColor] = useState(initialTask?.color || TASK_COLORS[0])
   const [icon, setIcon] = useState(initialTask?.icon || TASK_ICONS[0])
   const [repeatEnabled, setRepeatEnabled] = useState(
     Boolean(initialTask?.repeat_frequency && initialTask.repeat_frequency !== 'none')
@@ -133,7 +132,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
       title: title.trim(),
       start_time: startTime,
       duration,
-      color,
+      color: accentColor,
       icon,
       date: dateInputRef.current?.value || date,
       notification_moments: notificationMoments,
@@ -481,25 +480,6 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                   </span>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Color picker */}
-          <div>
-            <label className={`text-xs font-medium mb-2 block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              Color
-            </label>
-            <div className="flex gap-2 flex-wrap">
-              {TASK_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`w-8 h-8 rounded-full transition-all cursor-pointer
-                    ${color === c ? 'ring-2 ring-offset-2 ring-offset-[#1a1a24] scale-110' : 'hover:scale-110'}`}
-                  style={{ backgroundColor: c, ringColor: c }}
-                />
-              ))}
             </div>
           </div>
 

@@ -246,7 +246,6 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                       {taskCount > 0 && (
                         <span className="mt-1 hidden min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-0.5 pb-0.5 lg:flex">
                           {dayTasks.map((task) => {
-                            const taskColor = task.color || 'var(--color-accent)'
                             const isCompleted = Boolean(task.completed)
 
                             return (
@@ -259,7 +258,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                                       ? 'bg-white/[0.06] text-gray-200'
                                       : 'bg-white text-gray-700 border border-gray-200/70'}`}
                                 style={{
-                                  borderLeft: `2px solid ${taskColor}`,
+                                  borderLeft: '2px solid var(--color-accent)',
                                 }}
                                 title={task.title}
                               >

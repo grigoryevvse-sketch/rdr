@@ -17,6 +17,14 @@ export const ACCENT_COLORS = [
   { name: 'Butter',    hex: '#fde68a' },
   { name: 'Lilac',     hex: '#c4b5fd' },
   { name: 'Sage',      hex: '#86efac' },
+  { name: 'Coral',     hex: '#fb7185' },
+  { name: 'Amber',     hex: '#fbbf24' },
+  { name: 'Lime',      hex: '#a3e635' },
+  { name: 'Emerald',   hex: '#34d399' },
+  { name: 'Cyan',      hex: '#22d3ee' },
+  { name: 'Azure',     hex: '#60a5fa' },
+  { name: 'Violet',    hex: '#8b5cf6' },
+  { name: 'Rose',      hex: '#e879f9' },
 ]
 
 // ─── Task icon options (Lucide icon names) ───

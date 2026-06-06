@@ -16,12 +16,12 @@ const EXAMPLE_PROMPTS = [
 export default function AITab({ onAddScheduled, onAddInbox }) {
   const [result, setResult] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const { theme, setTab } = useApp()
+  const { accentColor, theme, setTab } = useApp()
 
-  async function handleSubmit(text) {
+  async function handleSubmit(text, image) {
     setIsProcessing(true)
     try {
-      const parsed = await parseTaskInput(text)
+      const parsed = await parseTaskInput(text, image)
       setResult(parsed)
     } catch (error) {
       console.error('AI Parsing Error:', error)
@@ -32,25 +32,40 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
 
   function handleConfirm() {
     if (!result) return
-    
-    if (result.intent === 'inbox') {
-      onAddInbox(result.title)
-      setTab('inbox') // Switch to Inbox tab so the user sees the added task
-    } else {
+
+    const items = result.intent === 'batch' && Array.isArray(result.items)
+      ? result.items
+      : [result]
+    let addedScheduled = false
+    let addedInbox = false
+
+    items.forEach((item) => {
+      if (item.intent === 'inbox') {
+        onAddInbox(item.title)
+        addedInbox = true
+        return
+      }
+
       onAddScheduled({
-        title: result.title,
-        start_time: result.time || '09:00', // Default to 9:00 AM if no time is provided
-        duration: result.duration || 30,    // Default to 30 min duration
-        color: '#a78bfa',
+        title: item.title,
+        start_time: item.time || '09:00', // Default to 9:00 AM if no time is provided
+        duration: item.duration || 30,    // Default to 30 min duration
+        color: accentColor,
         icon: 'sparkles',
-        date: result.date,                  // Use the resolved ISO date string directly
-        repeat_frequency: result.repeat_frequency || 'none',
+        date: item.date,                  // Use the resolved ISO date string directly
+        repeat_frequency: item.repeat_frequency || 'none',
         repeat_interval: 1,
-        notification_moments: Array.isArray(result.notification_moments)
-          ? result.notification_moments
+        notification_moments: Array.isArray(item.notification_moments)
+          ? item.notification_moments
           : undefined,
       })
-      setTab('calendar') // Switch to Calendar tab so the user sees the added task
+      addedScheduled = true
+    })
+
+    if (addedScheduled) {
+      setTab('calendar') // Switch to Calendar tab so the user sees the added tasks
+    } else if (addedInbox) {
+      setTab('inbox') // Switch to Inbox tab so the user sees the added tasks
     }
     setResult(null)
   }

@@ -32,6 +32,9 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
   const isCompleted = Boolean(task.completed)
   const repeats = isRepeatingTask(task)
   const repeatLabel = getRepeatLabel(task)
+  const accentColor = 'var(--color-accent)'
+  const accentSoft = 'var(--color-accent-light)'
+  const accentIconBackground = 'color-mix(in srgb, var(--color-accent) 24%, transparent)'
 
   // Dynamically get the Lucide icon component
   const iconName = task.icon
@@ -119,8 +122,8 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
       style={{
         top,
         height,
-        backgroundColor: task.color + '18',
-        borderLeft: `3px solid ${task.color}`,
+        backgroundColor: accentSoft,
+        borderLeft: `3px solid ${accentColor}`,
         opacity: isCompleted ? 0.58 : dragPreview ? 0.86 : 1,
       }}
       title="Drag to reschedule, or click to edit"
@@ -145,9 +148,9 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
       {/* Icon */}
       <div
         className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-        style={{ backgroundColor: task.color + '30' }}
+        style={{ backgroundColor: accentIconBackground }}
       >
-        <IconComponent size={14} style={{ color: task.color }} />
+        <IconComponent size={14} style={{ color: accentColor }} />
       </div>
 
       {/* Content */}

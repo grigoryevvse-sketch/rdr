@@ -54,10 +54,21 @@ function customReminderId(minutes) {
 /**
  * Helper to execute standard API call for a specific Gemini model candidate.
  */
-async function fetchGeminiData(modelName, apiKey, prompt) {
+async function fetchGeminiData(modelName, apiKey, prompt, image) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 8000)
+  const parts = [{ text: prompt }]
+
+  if (image?.data && image?.mimeType) {
+    parts.push({
+      inlineData: {
+        mimeType: image.mimeType,
+        data: image.data,
+      },
+    })
+  }
+
   const response = await fetch(url, {
     method: 'POST',
     signal: controller.signal,
@@ -68,7 +79,7 @@ async function fetchGeminiData(modelName, apiKey, prompt) {
       contents: [
         {
           role: 'user',
-          parts: [{ text: prompt }]
+          parts
         }
       ],
       generationConfig: {
@@ -97,20 +108,21 @@ async function fetchGeminiData(modelName, apiKey, prompt) {
  * 
  * Returns resolved date in YYYY-MM-DD format.
  */
-export async function parseTaskInput(input) {
+export async function parseTaskInput(input, image = null) {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
   const isConfigured = apiKey && apiKey !== 'YOUR_GEMINI_API_KEY_HERE' && apiKey.trim() !== ''
   const todayISO = format(new Date(), 'yyyy-MM-dd')
 
   if (!isConfigured) {
     console.warn('Gemini API key is not configured. Falling back to local Regex parser.')
-    return getResolvedFallback(input)
+    return getResolvedFallback(input || 'Schedule from attached image')
   }
 
   const todayName = format(new Date(), 'EEEE, MMMM d, yyyy')
-  const prompt = `You are an advanced NLP engine for a smart calendar and task manager app. Parse the user's natural language input into one strict JSON object that matches the app's supported fields.
-User input: "${input}"
+  const prompt = `You are an advanced NLP engine for a smart calendar and task manager app. Parse the user's natural language input into strict JSON that matches the app's supported fields.
+User input: "${input || 'Parse the attached image into calendar tasks.'}"
 Current date/time context: ${new Date().toISOString()} (today is: ${todayName})
+Attached image: ${image ? 'Yes. Read it as a calendar, timetable, whiteboard plan, school schedule, flight card, appointment card, or event list.' : 'No.'}
 
 Rules:
 1. intent must be "schedule" for calendar entries and "inbox" for loose to-do items.
@@ -123,9 +135,12 @@ Rules:
 8. notification_moments must contain only these app tokens: "start", "before10", "before60", "before1day", "before2days", "before1week", "before1month", "finish", or custom minute tokens like "custom:45".
 9. Birthdays and anniversaries: title format "Birthday: [Name]" or "Anniversary: [Name]", intent "schedule", repeat_frequency "yearly", reminders ["before1week", "before1day", "start"].
 10. Critical events such as flight, doctor, dentist, exam, interview, or show should include reminders ["before1day", "before60"] unless the user gives different reminders.
-11. Return only raw JSON. No markdown, no explanation.
+11. If an attached image contains a calendar, timetable, schedule, list of appointments, school agenda, meeting plan, or hand-written plan, extract each visible event that has enough information to schedule. Use the user's text to resolve missing dates or context.
+12. If the request or image contains several distinct events or tasks, especially a heavy planning request like a trip, study plan, launch day, or multi-step day plan, return a batch object with an "items" array. Split it into 2-12 concrete entries that can be added at once.
+13. If text in the image is uncertain, use the most likely concise title and keep date/time conservative. Do not invent events that are not visible or implied by the user's text.
+14. Return only raw JSON. No markdown, no explanation.
 
-Respond ONLY with a raw JSON object matching this schema:
+For one item, respond with a raw JSON object matching this schema:
 {
   "intent": "schedule" | "inbox",
   "title": "string",
@@ -134,14 +149,30 @@ Respond ONLY with a raw JSON object matching this schema:
   "duration": number | null,
   "repeat_frequency": "daily" | "weekly" | "monthly" | "yearly" | "none",
   "notification_moments": []
+}
+
+For multiple items, respond with this schema:
+{
+  "intent": "batch",
+  "items": [
+    {
+      "intent": "schedule" | "inbox",
+      "title": "string",
+      "date": "YYYY-MM-DD",
+      "time": "HH:MM" | null,
+      "duration": number | null,
+      "repeat_frequency": "daily" | "weekly" | "monthly" | "yearly" | "none",
+      "notification_moments": []
+    }
+  ]
 }`
 
   // Try each model candidate sequentially
   for (const model of MODEL_CANDIDATES) {
     try {
       console.log(`Attempting task parsing using Gemini model: ${model}`)
-      const parsed = await fetchGeminiData(model, apiKey, prompt)
-      return normalizeParsedResult(parsed, input)
+      const parsed = await fetchGeminiData(model, apiKey, prompt, image)
+      return normalizeParsedResult(parsed, input || 'Schedule from attached image')
     } catch (error) {
       console.error(`Gemini candidate model ${model} failed:`, error.message)
       // Continue loop to try next fallback model candidate
@@ -149,14 +180,40 @@ Respond ONLY with a raw JSON object matching this schema:
   }
 
   console.warn('All Gemini candidate models failed to parse request. Falling back to local Regex parser.')
-  return getResolvedFallback(input)
+  return getResolvedFallback(input || 'Schedule from attached image')
 }
 
 function getResolvedFallback(input) {
-  return localRegexParse(input)
+  return localRegexParseBatch(input)
 }
 
 function normalizeParsedResult(parsed, input) {
+  const parsedItems = getParsedItems(parsed)
+  if (parsedItems.length > 1) {
+    return {
+      intent: 'batch',
+      items: parsedItems.map((item) => normalizeSingleParsedResult(item, input)),
+      raw: input,
+    }
+  }
+
+  if (parsedItems.length === 1) {
+    return normalizeSingleParsedResult(parsedItems[0], input)
+  }
+
+  return normalizeSingleParsedResult(parsed, input)
+}
+
+function getParsedItems(parsed) {
+  if (Array.isArray(parsed)) return parsed
+  if (!parsed || typeof parsed !== 'object') return []
+
+  const candidateLists = [parsed.items, parsed.events, parsed.tasks, parsed.entries]
+  const items = candidateLists.find((list) => Array.isArray(list))
+  return items || []
+}
+
+function normalizeSingleParsedResult(parsed, input) {
   const safeParsed = parsed && typeof parsed === 'object' ? parsed : {}
   const rawIntent = safeParsed.intent
   const time = normalizeParsedTime(safeParsed.time ?? safeParsed.start_time)
@@ -306,7 +363,33 @@ function parseFutureDate(dateText, formats, base) {
   return null
 }
 
-function localRegexParse(input) {
+function localRegexParseBatch(input) {
+  const parts = splitMultiEventInput(input)
+  if (parts.length <= 1) return localRegexParse(input)
+
+  const fallbackDate = resolveDateReference(input) || format(new Date(), 'yyyy-MM-dd')
+  return {
+    intent: 'batch',
+    items: parts.map((part) => localRegexParse(part, { fallbackDate })),
+    raw: input,
+  }
+}
+
+function splitMultiEventInput(input) {
+  const normalized = input
+    .replace(/\r?\n+/g, ';')
+    .replace(/\b(?:also|then|and then)\b/gi, ';')
+    .replace(/\s+\d+[.)]\s+/g, ';')
+
+  const parts = normalized
+    .split(/\s*;\s*/)
+    .map((part) => part.trim())
+    .filter((part) => part.length > 2)
+
+  return parts.length > 1 ? parts : [input]
+}
+
+function localRegexParse(input, options = {}) {
   const text = input.toLowerCase().trim()
 
   // Determine intent: inbox vs schedule
@@ -338,7 +421,7 @@ function localRegexParse(input) {
     }
   }
 
-  const date = resolveDateReference(text) || format(new Date(), 'yyyy-MM-dd')
+  const date = resolveDateReference(text) || options.fallbackDate || format(new Date(), 'yyyy-MM-dd')
 
   // Extract title: remove time/date/duration phrases, intent phrases
   let title = text

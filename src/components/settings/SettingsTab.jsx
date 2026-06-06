@@ -260,7 +260,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                   inputMode="numeric"
                   value={telegramChatId}
                   onChange={(event) => updateTelegramChatId(event.target.value)}
-                  placeholder="468492813"
+                  placeholder="Your chat ID"
                   className={`mt-3 w-full px-3 py-2.5 rounded-xl text-sm outline-none
                     ${theme === 'dark'
                       ? 'bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:border-accent'

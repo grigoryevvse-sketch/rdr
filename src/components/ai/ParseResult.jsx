@@ -14,13 +14,8 @@ function formatResultDate(date) {
   return format(parsed, 'EEEE, MMMM d')
 }
 
-export default function ParseResult({ result, onConfirm, onDismiss }) {
-  const { theme } = useApp()
-  const isSchedule = result.intent === 'schedule'
-  const repeatLabel = REPEAT_FREQUENCIES.find((frequency) => (
-    frequency.value === result.repeat_frequency
-  ))?.label
-  const reminderLabels = Array.isArray(result.notification_moments)
+function getReminderLabels(result) {
+  return Array.isArray(result.notification_moments)
     ? result.notification_moments.map((moment) => {
       if (isCustomNotificationMoment(moment)) {
         return formatMinutesBefore(moment.replace('custom:', ''))
@@ -28,6 +23,76 @@ export default function ParseResult({ result, onConfirm, onDismiss }) {
       return NOTIFICATION_MOMENTS.find((option) => option.id === moment)?.label
     }).filter(Boolean)
     : []
+}
+
+function ResultFields({ result, compact = false }) {
+  const { theme } = useApp()
+  const isSchedule = result.intent === 'schedule'
+  const repeatLabel = REPEAT_FREQUENCIES.find((frequency) => (
+    frequency.value === result.repeat_frequency
+  ))?.label
+  const reminderLabels = getReminderLabels(result)
+
+  return (
+    <div className={compact ? 'space-y-2' : 'space-y-3'}>
+      <div className="flex items-start gap-3">
+        <AlignLeft size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
+        <div>
+          <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Task</p>
+          <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+            {result.title}
+          </p>
+        </div>
+      </div>
+
+      {isSchedule && (
+        <div className="flex items-start gap-3">
+          <Clock size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
+          <div>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Time</p>
+            <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {formatResultDate(result.date)} at {formatTime12h(result.time || '09:00')}
+              {!result.time && ' (default)'}
+              {` · ${result.duration || 30} min`}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isSchedule && repeatLabel && (
+        <div className="flex items-start gap-3">
+          <Repeat size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
+          <div>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Repeat</p>
+            <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {repeatLabel}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isSchedule && reminderLabels.length > 0 && (
+        <div className="flex items-start gap-3">
+          <Bell size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
+          <div>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Reminders</p>
+            <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+              {reminderLabels.join(', ')}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function ParseResult({ result, onConfirm, onDismiss }) {
+  const { theme } = useApp()
+  const items = result.intent === 'batch' && Array.isArray(result.items)
+    ? result.items
+    : [result]
+  const isBatch = items.length > 1
+  const isSchedule = !isBatch && result.intent === 'schedule'
 
   return (
     <div className={`rounded-2xl p-5 animate-scale-in
@@ -37,60 +102,25 @@ export default function ParseResult({ result, onConfirm, onDismiss }) {
         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
           ${isSchedule ? 'bg-accent/15 text-accent' : 'bg-blue-500/15 text-blue-400'}`}>
           {isSchedule ? <CalendarDays size={12} /> : <Inbox size={12} />}
-          {isSchedule ? 'Schedule' : 'Add to Inbox'}
+          {isBatch ? `${items.length} planned items` : (isSchedule ? 'Schedule' : 'Add to Inbox')}
         </div>
       </div>
 
       {/* Parsed fields */}
-      <div className="space-y-3">
-        <div className="flex items-start gap-3">
-          <AlignLeft size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
-          <div>
-            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Task</p>
-            <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {result.title}
-            </p>
-          </div>
+      {isBatch ? (
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div
+              key={`${item.title}-${index}`}
+              className={`rounded-xl p-3 ${theme === 'dark' ? 'bg-black/15' : 'bg-gray-50'}`}
+            >
+              <ResultFields result={item} compact />
+            </div>
+          ))}
         </div>
-
-        {isSchedule && (
-          <div className="flex items-start gap-3">
-            <Clock size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
-            <div>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Time</p>
-              <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {formatResultDate(result.date)} at {formatTime12h(result.time || '09:00')}
-                {!result.time && ' (default)'}
-                {` · ${result.duration || 30} min`}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {isSchedule && repeatLabel && (
-          <div className="flex items-start gap-3">
-            <Repeat size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
-            <div>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Repeat</p>
-              <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {repeatLabel}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {isSchedule && reminderLabels.length > 0 && (
-          <div className="flex items-start gap-3">
-            <Bell size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
-            <div>
-              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Reminders</p>
-              <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                {reminderLabels.join(', ')}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+      ) : (
+        <ResultFields result={result} />
+      )}
 
       {/* Actions */}
       <div className="flex gap-2 mt-5">
