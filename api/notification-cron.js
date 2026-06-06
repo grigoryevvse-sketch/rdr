@@ -11,6 +11,8 @@ import {
 } from './lib/notification-helpers.js'
 
 const DEFAULT_MOMENTS = ['start']
+const TASK_LOOKBACK_DAYS = 2
+const TASK_LOOKAHEAD_DAYS = 32
 
 function sendJson(response, statusCode, body) {
   response.statusCode = statusCode
@@ -20,6 +22,9 @@ function sendJson(response, statusCode, body) {
 
 function isAuthorized(request) {
   const cronSecret = process.env.CRON_SECRET
+  const isVercelCron = request.headers['x-vercel-cron'] === '1'
+
+  if (isVercelCron) return true
   if (!cronSecret) return true
 
   const url = new URL(request.url || '/', 'http://localhost')
@@ -49,16 +54,16 @@ export default async function handler(request, response) {
   }
 
   const now = Date.now()
-  const tomorrow = new Date(now + 24 * 60 * 60_000).toISOString().slice(0, 10)
-  const yesterday = new Date(now - 24 * 60 * 60_000).toISOString().slice(0, 10)
+  const maxTaskDate = new Date(now + TASK_LOOKAHEAD_DAYS * 24 * 60 * 60_000).toISOString().slice(0, 10)
+  const minTaskDate = new Date(now - TASK_LOOKBACK_DAYS * 24 * 60 * 60_000).toISOString().slice(0, 10)
 
   const [{ data: tasks, error: tasksError }, { data: settings, error: settingsError }] = await Promise.all([
     supabase
       .from('scheduled_tasks')
       .select('id,user_id,title,date,start_time,duration,completed,notification_moments')
       .eq('completed', false)
-      .gte('date', yesterday)
-      .lte('date', tomorrow),
+      .gte('date', minTaskDate)
+      .lte('date', maxTaskDate),
     supabase
       .from('notification_settings')
       .select('user_id,browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone'),
@@ -108,11 +113,11 @@ export default async function handler(request, response) {
       try {
         await deliverNotification(supabase, userSettings, task, momentId, key)
         delivered += 1
-      } catch (error) {
+      } catch {
         failed += 1
         await supabase
           .from('notification_deliveries')
-          .update({ error: error.message || 'Notification delivery failed' })
+          .delete()
           .eq('notification_key', key)
       }
     }

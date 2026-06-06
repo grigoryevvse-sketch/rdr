@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { isSupabaseConfigured, supabase, supabaseConfigError } from '../supabase'
-import { DEFAULT_SCHEDULED_TASKS, DEFAULT_INBOX_TASKS } from '../utils/constants'
+import { DEFAULT_SCHEDULED_TASKS, DEFAULT_INBOX_TASKS, TASK_COLORS, TASK_ICONS } from '../utils/constants'
 import { generateId, formatDateISO } from '../utils/dateUtils'
 import { getNextRepeatDate, isRepeatingTask } from '../utils/repeatUtils'
 
@@ -8,6 +8,36 @@ const LOCAL_SCHEDULED_TASKS_KEY = 'planner-scheduled'
 const LOCAL_INBOX_TASKS_KEY = 'planner-inbox'
 const LOCAL_NOTIFICATION_MOMENTS_KEY = 'planner-task-notification-moments'
 const SUPABASE_REQUIRED_MESSAGE = 'Task sync requires Supabase. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+
+function isValidDateString(value) {
+  if (typeof value !== 'string' || !DATE_PATTERN.test(value)) return false
+  const parsed = new Date(`${value}T00:00:00`)
+  return !Number.isNaN(parsed.getTime())
+}
+
+function normalizeDate(value) {
+  return isValidDateString(value) ? value : formatDateISO(new Date())
+}
+
+function normalizeTime(value) {
+  return typeof value === 'string' && TIME_PATTERN.test(value) ? value : '09:00'
+}
+
+function normalizeDuration(value) {
+  const duration = Number(value)
+  if (!Number.isFinite(duration)) return 30
+  return Math.min(Math.max(Math.round(duration), 1), 24 * 60)
+}
+
+function normalizeColor(value) {
+  return typeof value === 'string' && value.trim() ? value : TASK_COLORS[0]
+}
+
+function normalizeIcon(value) {
+  return typeof value === 'string' && value.trim() ? value : TASK_ICONS[0]
+}
 
 function readLocalNotificationMoments() {
   try {
@@ -29,23 +59,32 @@ function readLocalArray(key) {
 
 function mergeLocalNotificationMoments(tasks) {
   const saved = readLocalNotificationMoments()
-  return tasks.map((task) => ({
+  return tasks.map((task) => normalizeScheduledTask({
     ...task,
-    completed: Boolean(task.completed),
-    notification_moments: Array.isArray(task.notification_moments)
+    notification_moments: Array.isArray(task?.notification_moments)
       ? task.notification_moments
-      : saved[task.id],
+      : saved[task?.id],
   }))
 }
 
 function normalizeScheduledTask(task) {
+  const safeTask = task && typeof task === 'object' ? task : {}
   return {
-    ...task,
-    completed: Boolean(task.completed),
-    repeat_frequency: task.repeat_frequency || 'none',
-    repeat_interval: Math.max(Number(task.repeat_interval) || 1, 1),
-    notification_moments: Array.isArray(task.notification_moments)
-      ? task.notification_moments
+    ...safeTask,
+    id: typeof safeTask.id === 'string' && safeTask.id ? safeTask.id : generateId(),
+    title: typeof safeTask.title === 'string' && safeTask.title.trim()
+      ? safeTask.title.trim()
+      : 'Untitled task',
+    date: normalizeDate(safeTask.date),
+    start_time: normalizeTime(safeTask.start_time),
+    duration: normalizeDuration(safeTask.duration),
+    color: normalizeColor(safeTask.color),
+    icon: normalizeIcon(safeTask.icon),
+    completed: Boolean(safeTask.completed),
+    repeat_frequency: safeTask.repeat_frequency || 'none',
+    repeat_interval: Math.max(Number(safeTask.repeat_interval) || 1, 1),
+    notification_moments: Array.isArray(safeTask.notification_moments)
+      ? safeTask.notification_moments
       : undefined,
   }
 }
@@ -78,7 +117,7 @@ function readLocalTasksForMigration() {
 
   return {
     scheduled: scheduled
-      .filter((task) => task && typeof task.title === 'string' && typeof task.start_time === 'string')
+      .filter((task) => task && typeof task.title === 'string')
       .map((task) => normalizeScheduledTask({
         ...task,
         id: generateId(),

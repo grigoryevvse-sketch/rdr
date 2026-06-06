@@ -7,6 +7,7 @@ import { useNotificationScheduler, usePushSubscription } from './hooks/useNotifi
 import { isSupabaseConfigured, supabase } from './supabase'
 import { TABS } from './utils/constants'
 
+import ErrorBoundary from './components/ErrorBoundary'
 import LoginScreen from './components/auth/LoginScreen'
 import Sidebar from './components/layout/Sidebar'
 import BottomNav from './components/layout/BottomNav'
@@ -44,12 +45,7 @@ function AppContent() {
   const canSyncNotificationSettings = Boolean(
     isSupabaseConfigured && supabase && effectiveUser?.id && effectiveUser.id !== 'demo'
   )
-  const clientNotificationSettings = useMemo(() => (
-    canSyncNotificationSettings
-      ? { ...notificationSettings, enabled: false, telegramEnabled: false }
-      : notificationSettings
-  ), [canSyncNotificationSettings, notificationSettings])
-  const notificationControls = useNotificationScheduler(scheduledTasks, clientNotificationSettings)
+  const notificationControls = useNotificationScheduler(scheduledTasks, notificationSettings)
   const serverSettingsLoadedRef = useRef(false)
 
   usePushSubscription(effectiveUser, notificationSettings, notificationControls.permission)
@@ -250,8 +246,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   )
 }

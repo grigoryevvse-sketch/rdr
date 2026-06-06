@@ -4,6 +4,22 @@ import { TABS, ACCENT_COLORS, DEFAULT_NOTIFICATION_MOMENTS } from '../utils/cons
 
 const NOTIFICATION_SETTINGS_KEY = 'planner-notification-settings'
 
+function readStorageValue(key, fallback = null) {
+  try {
+    return localStorage.getItem(key) || fallback
+  } catch {
+    return fallback
+  }
+}
+
+function writeStorageValue(key, value) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Storage can be unavailable in restricted browser contexts.
+  }
+}
+
 function loadNotificationSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem(NOTIFICATION_SETTINGS_KEY))
@@ -26,11 +42,13 @@ function loadNotificationSettings() {
 }
 
 // ─── Initial State ───
-const initialState = {
-  activeTab: TABS.CALENDAR,
-  theme: localStorage.getItem('planner-theme') || 'dark',
-  accentColor: localStorage.getItem('planner-accent') || ACCENT_COLORS[0].hex,
-  notificationSettings: loadNotificationSettings(),
+function getInitialState() {
+  return {
+    activeTab: TABS.CALENDAR,
+    theme: readStorageValue('planner-theme', 'dark'),
+    accentColor: readStorageValue('planner-accent', ACCENT_COLORS[0].hex),
+    notificationSettings: loadNotificationSettings(),
+  }
 }
 
 // ─── Actions ───
@@ -66,11 +84,11 @@ function reducer(state, action) {
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
-  const [state, dispatch] = useReducer(reducer, initialState)
+  const [state, dispatch] = useReducer(reducer, undefined, getInitialState)
 
   // Persist theme & accent to localStorage
   useEffect(() => {
-    localStorage.setItem('planner-theme', state.theme)
+    writeStorageValue('planner-theme', state.theme)
     // Apply dark/light class to <html>
     if (state.theme === 'dark') {
       document.documentElement.classList.remove('light')
@@ -82,7 +100,7 @@ export function AppProvider({ children }) {
   }, [state.theme])
 
   useEffect(() => {
-    localStorage.setItem('planner-accent', state.accentColor)
+    writeStorageValue('planner-accent', state.accentColor)
     document.documentElement.style.setProperty('--color-accent', state.accentColor)
     // Create a lighter version for backgrounds
     document.documentElement.style.setProperty(
@@ -92,7 +110,7 @@ export function AppProvider({ children }) {
   }, [state.accentColor])
 
   useEffect(() => {
-    localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(state.notificationSettings))
+    writeStorageValue(NOTIFICATION_SETTINGS_KEY, JSON.stringify(state.notificationSettings))
   }, [state.notificationSettings])
 
   const setTab = useCallback((tab) => dispatch({ type: ACTIONS.SET_TAB, payload: tab }), [])

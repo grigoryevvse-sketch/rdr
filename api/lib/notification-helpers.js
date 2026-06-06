@@ -2,7 +2,7 @@ import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { format, subMonths } from 'date-fns'
 
-export const DUE_WINDOW_MS = 5 * 60_000
+export const DUE_WINDOW_MS = 15 * 60_000
 
 export function createSupabaseAdmin() {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL

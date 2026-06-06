@@ -34,6 +34,7 @@ Telegram and browser push reminders are sent by the server, so they can still ar
 
 1. Run `supabase-server-notifications.sql` in the Supabase SQL editor if your project already had the base schema.
 2. Add these environment variables in your deployment:
+   - `VITE_SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `TELEGRAM_BOT_TOKEN`
    - `VAPID_PUBLIC_KEY`
@@ -42,6 +43,7 @@ Telegram and browser push reminders are sent by the server, so they can still ar
    - `CRON_SECRET`, optional for protecting manual cron calls
 3. Add `VITE_VAPID_PUBLIC_KEY` with the same value as `VAPID_PUBLIC_KEY`.
 4. Redeploy the app.
-5. On Vercel Hobby, create a free external cron job, for example on cron-job.org, that calls `/api/notification-cron?secret=YOUR_CRON_SECRET` every 1-5 minutes. Vercel Hobby cron jobs can only run once per day, so this project keeps the endpoint as a regular API route.
+5. In cron-job.org, create a monitor that calls `https://YOUR_DOMAIN/api/notification-cron` every 1-5 minutes with the `GET` method. If you set `CRON_SECRET` in Vercel, call `https://YOUR_DOMAIN/api/notification-cron?secret=YOUR_CRON_SECRET` instead.
+6. A successful cron run returns JSON like `{ "ok": true, "checked": 1, "delivered": 1, "skipped": 0, "failed": 0 }`.
 
 You can generate VAPID keys with any standard Web Push key generator, then paste the public key into both `VAPID_PUBLIC_KEY` and `VITE_VAPID_PUBLIC_KEY`.
