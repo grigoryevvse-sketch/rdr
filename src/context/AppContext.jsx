@@ -59,6 +59,22 @@ const ACTIONS = {
   SET_NOTIFICATION_SETTINGS: 'SET_NOTIFICATION_SETTINGS',
 }
 
+function arraysEqual(first, second) {
+  if (first === second) return true
+  if (!Array.isArray(first) || !Array.isArray(second)) return false
+  if (first.length !== second.length) return false
+  return first.every((value, index) => value === second[index])
+}
+
+function notificationSettingsEqual(first, second) {
+  return (
+    Boolean(first.enabled) === Boolean(second.enabled) &&
+    Boolean(first.telegramEnabled) === Boolean(second.telegramEnabled) &&
+    (first.telegramChatId || '') === (second.telegramChatId || '') &&
+    arraysEqual(first.defaultMoments, second.defaultMoments)
+  )
+}
+
 function reducer(state, action) {
   switch (action.type) {
     case ACTIONS.SET_TAB:
@@ -68,12 +84,20 @@ function reducer(state, action) {
     case ACTIONS.SET_ACCENT:
       return { ...state, accentColor: action.payload }
     case ACTIONS.SET_NOTIFICATION_SETTINGS:
-      return {
-        ...state,
-        notificationSettings: {
+      {
+        const nextNotificationSettings = {
           ...state.notificationSettings,
           ...action.payload,
-        },
+        }
+
+        if (notificationSettingsEqual(state.notificationSettings, nextNotificationSettings)) {
+          return state
+        }
+
+        return {
+          ...state,
+          notificationSettings: nextNotificationSettings,
+        }
       }
     default:
       return state
