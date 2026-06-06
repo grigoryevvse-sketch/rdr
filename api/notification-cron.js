@@ -22,7 +22,10 @@ function isAuthorized(request) {
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) return true
 
-  return request.headers.authorization === `Bearer ${cronSecret}`
+  const url = new URL(request.url || '/', 'http://localhost')
+  const querySecret = url.searchParams.get('secret')
+
+  return request.headers.authorization === `Bearer ${cronSecret}` || querySecret === cronSecret
 }
 
 export default async function handler(request, response) {
