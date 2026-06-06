@@ -46,27 +46,33 @@ function AppContent() {
     isSupabaseConfigured && supabase && effectiveUser?.id && effectiveUser.id !== 'demo'
   )
   const notificationControls = useNotificationScheduler(scheduledTasks, notificationSettings)
-  const serverSettingsLoadedRef = useRef(false)
+  const [serverSettingsLoadedUserId, setServerSettingsLoadedUserId] = useState(null)
+  const serverSettingsLoaded = canSyncNotificationSettings && serverSettingsLoadedUserId === effectiveUser?.id
+  const notificationSettingsRef = useRef(notificationSettings)
 
   usePushSubscription(effectiveUser, notificationSettings, notificationControls.permission)
 
   useEffect(() => {
-    serverSettingsLoadedRef.current = false
+    notificationSettingsRef.current = notificationSettings
+  }, [notificationSettings])
 
+  useEffect(() => {
     if (!canSyncNotificationSettings) return
 
     let cancelled = false
+    const userId = effectiveUser.id
 
     async function loadNotificationSettings() {
       const { data } = await supabase
         .from('notification_settings')
         .select('browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone')
-        .eq('user_id', effectiveUser.id)
+        .eq('user_id', userId)
         .maybeSingle()
 
       if (cancelled) return
 
       if (data) {
+        const localSettings = notificationSettingsRef.current
         const nextSettings = {
           enabled: Boolean(data.browser_enabled),
           telegramEnabled: Boolean(data.telegram_enabled),
@@ -77,14 +83,23 @@ function AppContent() {
           nextSettings.defaultMoments = data.default_moments
         }
 
+        if (
+          localSettings.telegramEnabled &&
+          localSettings.telegramChatId &&
+          (!nextSettings.telegramEnabled || !nextSettings.telegramChatId)
+        ) {
+          nextSettings.telegramEnabled = true
+          nextSettings.telegramChatId = localSettings.telegramChatId
+        }
+
         setNotificationSettings(nextSettings)
       }
 
-      serverSettingsLoadedRef.current = true
+      setServerSettingsLoadedUserId(userId)
     }
 
     loadNotificationSettings().catch(() => {
-      serverSettingsLoadedRef.current = true
+      setServerSettingsLoadedUserId(userId)
     })
 
     return () => {
@@ -93,7 +108,7 @@ function AppContent() {
   }, [canSyncNotificationSettings, effectiveUser?.id, setNotificationSettings])
 
   useEffect(() => {
-    if (!canSyncNotificationSettings || !serverSettingsLoadedRef.current) return
+    if (!canSyncNotificationSettings || !serverSettingsLoaded) return
 
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
 
@@ -109,7 +124,7 @@ function AppContent() {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' })
       .catch(() => {})
-  }, [canSyncNotificationSettings, effectiveUser?.id, notificationSettings])
+  }, [canSyncNotificationSettings, effectiveUser?.id, notificationSettings, serverSettingsLoaded])
 
   function handleSignIn(mode) {
     if (mode === 'demo') {

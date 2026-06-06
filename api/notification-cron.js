@@ -13,6 +13,7 @@ import {
 const DEFAULT_MOMENTS = ['start']
 const TASK_LOOKBACK_DAYS = 2
 const TASK_LOOKAHEAD_DAYS = 32
+const DEFAULT_TIME_ZONE = process.env.DEFAULT_TIME_ZONE || 'Europe/Prague'
 
 function sendJson(response, statusCode, body) {
   response.statusCode = statusCode
@@ -31,6 +32,31 @@ function isAuthorized(request) {
   const querySecret = url.searchParams.get('secret')
 
   return request.headers.authorization === `Bearer ${cronSecret}` || querySecret === cronSecret
+}
+
+function getSettingsForTask(settingsByUser, task) {
+  const userSettings = settingsByUser.get(task.user_id)
+  const fallbackTelegramChatId = String(process.env.TELEGRAM_CHAT_ID || '').trim()
+
+  if (userSettings) {
+    const shouldUseTelegramFallback = Boolean(fallbackTelegramChatId && !userSettings.telegram_chat_id)
+
+    return {
+      ...userSettings,
+      telegram_enabled: Boolean(userSettings.telegram_enabled || shouldUseTelegramFallback),
+      telegram_chat_id: userSettings.telegram_chat_id || fallbackTelegramChatId || '',
+      time_zone: userSettings.time_zone || DEFAULT_TIME_ZONE,
+    }
+  }
+
+  return {
+    user_id: task.user_id,
+    browser_enabled: false,
+    telegram_enabled: Boolean(fallbackTelegramChatId),
+    telegram_chat_id: fallbackTelegramChatId,
+    default_moments: DEFAULT_MOMENTS,
+    time_zone: DEFAULT_TIME_ZONE,
+  }
 }
 
 export default async function handler(request, response) {
@@ -79,9 +105,10 @@ export default async function handler(request, response) {
   let delivered = 0
   let skipped = 0
   let failed = 0
+  let due = 0
 
   for (const task of tasks || []) {
-    const userSettings = settingsByUser.get(task.user_id)
+    const userSettings = getSettingsForTask(settingsByUser, task)
     if (!userSettings?.browser_enabled && !userSettings?.telegram_enabled) continue
 
     const moments = Array.isArray(task.notification_moments) && task.notification_moments.length
@@ -93,6 +120,7 @@ export default async function handler(request, response) {
       checked += 1
 
       if (!triggerAt || !isDue(triggerAt, now)) continue
+      due += 1
 
       const key = notificationKey(task, momentId)
       const { error: deliveryError } = await supabase
@@ -111,7 +139,8 @@ export default async function handler(request, response) {
       }
 
       try {
-        await deliverNotification(supabase, userSettings, task, momentId, key)
+        const sentCount = await deliverNotification(supabase, userSettings, task, momentId, key)
+        if (sentCount < 1) throw new Error('No notification channel is available')
         delivered += 1
       } catch {
         failed += 1
@@ -123,7 +152,7 @@ export default async function handler(request, response) {
     }
   }
 
-  sendJson(response, 200, { ok: true, checked, delivered, skipped, failed })
+  sendJson(response, 200, { ok: true, checked, due, delivered, skipped, failed })
 }
 
 async function deliverNotification(supabase, settings, task, momentId, key) {
@@ -159,9 +188,11 @@ async function deliverNotification(supabase, settings, task, momentId, key) {
     }
   }
 
-  if (!deliveries.length) return
+  if (!deliveries.length) return 0
   const results = await Promise.allSettled(deliveries)
   if (results.every((result) => result.status === 'rejected')) {
     throw new Error(results[0].reason?.message || 'Notification delivery failed')
   }
+
+  return results.filter((result) => result.status === 'fulfilled').length
 }
