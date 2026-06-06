@@ -14,7 +14,7 @@ export default function BottomNav() {
   const { activeTab, setTab, theme } = useApp()
 
   return (
-    <nav className={`safe-bottom-nav md:hidden flex items-center justify-around px-2 pt-2 border-t
+    <nav className={`safe-bottom-nav md:hidden flex items-center justify-around px-2 pt-1.5 border-t
       ${theme === 'dark' ? 'bg-[#111118]/90 backdrop-blur-xl border-white/5' : 'bg-white/90 backdrop-blur-xl border-gray-200'}
       fixed bottom-0 left-0 right-0 z-50`}>
       {navItems.map(({ id, label, Icon }) => {
@@ -23,7 +23,7 @@ export default function BottomNav() {
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-xl
+            className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-xl
                         transition-all duration-200 cursor-pointer
                         ${isActive
                           ? 'text-accent'
