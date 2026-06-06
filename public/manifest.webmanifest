@@ -1,7 +1,7 @@
 {
-  "name": "Structured Daily Planner",
-  "short_name": "Structured",
-  "description": "Plan your day with scheduled tasks and reminders.",
+  "name": "Reminder",
+  "short_name": "Reminder",
+  "description": "Smart reminders, calendar scheduling, and task planning.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

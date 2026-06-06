@@ -9,12 +9,12 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured }) {
         {/* App Logo/Title */}
         <div className="mb-2">
           <img src="/favicon.svg" alt="" className="w-20 h-20 mx-auto mb-6 rounded-3xl shadow-2xl shadow-accent/25" />
-          <h1 className="text-4xl font-bold text-white mb-2">Structured</h1>
-          <p className="text-gray-400 text-lg">Daily Planner</p>
+          <h1 className="text-4xl font-bold text-white mb-2">Reminder</h1>
+          <p className="text-gray-400 text-lg">Smart Planner</p>
         </div>
 
         <p className="text-gray-500 text-sm mt-6 mb-8 max-w-xs mx-auto">
-          Plan your day beautifully. Sync across all your devices.
+          Plan your day, remember what matters, and sync across all your devices.
         </p>
 
         {/* Google Sign-In Button */}

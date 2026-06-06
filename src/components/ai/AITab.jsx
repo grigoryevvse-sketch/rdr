@@ -44,6 +44,11 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
         color: '#a78bfa',
         icon: 'sparkles',
         date: result.date,                  // Use the resolved ISO date string directly
+        repeat_frequency: result.repeat_frequency || 'none',
+        repeat_interval: 1,
+        notification_moments: Array.isArray(result.notification_moments)
+          ? result.notification_moments
+          : undefined,
       })
       setTab('calendar') // Switch to Calendar tab so the user sees the added task
     }

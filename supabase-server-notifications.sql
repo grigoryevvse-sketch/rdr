@@ -1,4 +1,4 @@
--- Server-side notifications for Antigravity Planner.
+-- Server-side notifications for Reminder.
 -- Run this in the Supabase SQL editor after the base schema.
 
 create extension if not exists pgcrypto;

@@ -1,7 +1,10 @@
-import { CalendarDays, Inbox, Check, X, Clock, AlignLeft } from 'lucide-react'
+import { CalendarDays, Inbox, Check, X, Clock, AlignLeft, Bell, Repeat } from 'lucide-react'
 import { format, parseISO, isValid, isToday, isTomorrow } from 'date-fns'
 import { formatTime12h } from '../../utils/dateUtils'
 import { useApp } from '../../context/AppContext'
+import { NOTIFICATION_MOMENTS } from '../../utils/constants'
+import { formatMinutesBefore, isCustomNotificationMoment } from '../../utils/notificationUtils'
+import { REPEAT_FREQUENCIES } from '../../utils/repeatUtils'
 
 function formatResultDate(date) {
   const parsed = parseISO(date)
@@ -14,6 +17,17 @@ function formatResultDate(date) {
 export default function ParseResult({ result, onConfirm, onDismiss }) {
   const { theme } = useApp()
   const isSchedule = result.intent === 'schedule'
+  const repeatLabel = REPEAT_FREQUENCIES.find((frequency) => (
+    frequency.value === result.repeat_frequency
+  ))?.label
+  const reminderLabels = Array.isArray(result.notification_moments)
+    ? result.notification_moments.map((moment) => {
+      if (isCustomNotificationMoment(moment)) {
+        return formatMinutesBefore(moment.replace('custom:', ''))
+      }
+      return NOTIFICATION_MOMENTS.find((option) => option.id === moment)?.label
+    }).filter(Boolean)
+    : []
 
   return (
     <div className={`rounded-2xl p-5 animate-scale-in
@@ -48,6 +62,30 @@ export default function ParseResult({ result, onConfirm, onDismiss }) {
                 {formatResultDate(result.date)} at {formatTime12h(result.time || '09:00')}
                 {!result.time && ' (default)'}
                 {` · ${result.duration || 30} min`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isSchedule && repeatLabel && (
+          <div className="flex items-start gap-3">
+            <Repeat size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
+            <div>
+              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Repeat</p>
+              <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {repeatLabel}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isSchedule && reminderLabels.length > 0 && (
+          <div className="flex items-start gap-3">
+            <Bell size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
+            <div>
+              <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Reminders</p>
+              <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {reminderLabels.join(', ')}
               </p>
             </div>
           </div>

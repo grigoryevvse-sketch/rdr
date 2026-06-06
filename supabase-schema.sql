@@ -1,4 +1,4 @@
--- Supabase schema for Antigravity Planner.
+-- Supabase schema for Reminder.
 -- Run this once in the Supabase SQL editor before using the app.
 
 create extension if not exists pgcrypto;

@@ -4,9 +4,12 @@ import { DEFAULT_NOTIFICATION_MOMENTS, NOTIFICATION_MOMENTS, TASK_COLORS, TASK_I
 import { REPEAT_FREQUENCIES } from '../../utils/repeatUtils'
 import {
   addCustomNotificationMoment,
+  customReminderToMinutes,
+  CUSTOM_NOTIFICATION_UNITS,
   formatMinutesBefore,
   getCustomNotificationMinutesList,
   removeCustomNotificationMoment,
+  splitCustomReminderMinutes,
   updateCustomNotificationMoment,
 } from '../../utils/notificationUtils'
 import * as LucideIcons from 'lucide-react'
@@ -87,7 +90,8 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
       ? initialTask.notification_moments
       : notificationSettings.defaultMoments || DEFAULT_NOTIFICATION_MOMENTS
   )
-  const [newCustomReminderMinutes, setNewCustomReminderMinutes] = useState(30)
+  const [newCustomReminderValue, setNewCustomReminderValue] = useState(30)
+  const [newCustomReminderUnit, setNewCustomReminderUnit] = useState('minutes')
   const customReminderMinutes = getCustomNotificationMinutesList(notificationMoments)
   const selectedTimeRef = useRef(null)
   const dateInputRef = useRef(null)
@@ -172,14 +176,17 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   }
 
   function addCustomReminder() {
+    const minutes = customReminderToMinutes(newCustomReminderValue, newCustomReminderUnit)
     setNotificationMoments((current) => (
-      addCustomNotificationMoment(current, newCustomReminderMinutes)
+      addCustomNotificationMoment(current, minutes)
     ))
-    setNewCustomReminderMinutes(clamp(Number(newCustomReminderMinutes) || 1, 1, 10_080))
+    const reminder = splitCustomReminderMinutes(minutes)
+    setNewCustomReminderValue(reminder.value)
+    setNewCustomReminderUnit(reminder.unit)
   }
 
-  function updateCustomReminderMinutes(oldMinutes, value) {
-    const nextMinutes = clamp(Number(value) || 1, 1, 10_080)
+  function updateCustomReminder(oldMinutes, value, unit) {
+    const nextMinutes = customReminderToMinutes(value, unit)
     setNotificationMoments((current) => (
       updateCustomNotificationMoment(current, oldMinutes, nextMinutes)
     ))
@@ -581,27 +588,35 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       Custom reminders
                     </span>
                     <span className={`block text-xs ${customReminderMinutes.length ? 'text-accent/80' : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Add minutes-before alerts
+                      Add alerts before start
                     </span>
                   </span>
                 </div>
 
                 <div className="mt-3 space-y-2">
-                  {customReminderMinutes.map((minutes) => (
-                    <div key={`custom-${minutes}`} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center animate-fade-in">
+                  {customReminderMinutes.map((minutes) => {
+                    const reminder = splitCustomReminderMinutes(minutes)
+                    return (
+                    <div key={`custom-${minutes}`} className="grid grid-cols-[minmax(0,1fr)_7.25rem_auto] gap-2 items-center animate-fade-in">
                       <input
                         type="number"
                         min="1"
-                        max="10080"
                         step="1"
-                        value={minutes}
-                        onChange={(e) => updateCustomReminderMinutes(minutes, e.target.value)}
+                        value={reminder.value}
+                        onChange={(e) => updateCustomReminder(minutes, e.target.value, reminder.unit)}
                         aria-label={`Custom reminder ${formatMinutesBefore(minutes)}`}
                         className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none ${fieldClass}`}
                       />
-                      <span className={`text-xs font-medium whitespace-nowrap ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                        min before
-                      </span>
+                      <select
+                        value={reminder.unit}
+                        onChange={(e) => updateCustomReminder(minutes, reminder.value, e.target.value)}
+                        aria-label={`Custom reminder unit for ${formatMinutesBefore(minutes)}`}
+                        className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer ${fieldClass}`}
+                      >
+                        {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
+                          <option key={unit.value} value={unit.value}>{unit.label}</option>
+                        ))}
+                      </select>
                       <button
                         type="button"
                         onClick={() => removeCustomReminder(minutes)}
@@ -614,22 +629,29 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                         <Trash2 size={15} />
                       </button>
                     </div>
-                  ))}
+                    )
+                  })}
 
-                  <div className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+                  <div className="grid grid-cols-[minmax(0,1fr)_7.25rem_auto] gap-2 items-center">
                     <input
                       type="number"
                       min="1"
-                      max="10080"
                       step="1"
-                      value={newCustomReminderMinutes}
-                      onChange={(e) => setNewCustomReminderMinutes(clamp(Number(e.target.value) || 1, 1, 10_080))}
-                      aria-label="New custom reminder minutes"
+                      value={newCustomReminderValue}
+                      onChange={(e) => setNewCustomReminderValue(Math.max(1, Number(e.target.value) || 1))}
+                      aria-label="New custom reminder amount"
                       className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none ${fieldClass}`}
                     />
-                    <span className={`text-xs font-medium whitespace-nowrap ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      min before
-                    </span>
+                    <select
+                      value={newCustomReminderUnit}
+                      onChange={(e) => setNewCustomReminderUnit(e.target.value)}
+                      aria-label="New custom reminder unit"
+                      className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer ${fieldClass}`}
+                    >
+                      {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
+                        <option key={unit.value} value={unit.value}>{unit.label}</option>
+                      ))}
+                    </select>
                     <button
                       type="button"
                       onClick={addCustomReminder}

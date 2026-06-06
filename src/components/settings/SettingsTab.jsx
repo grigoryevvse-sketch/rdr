@@ -7,9 +7,12 @@ import { DEFAULT_NOTIFICATION_MOMENTS, NOTIFICATION_MOMENTS } from '../../utils/
 import { sendTelegramReminder } from '../../utils/telegramUtils'
 import {
   addCustomNotificationMoment,
+  customReminderToMinutes,
+  CUSTOM_NOTIFICATION_UNITS,
   formatMinutesBefore,
   getCustomNotificationMinutesList,
   removeCustomNotificationMoment,
+  splitCustomReminderMinutes,
   updateCustomNotificationMoment,
 } from '../../utils/notificationUtils'
 
@@ -17,7 +20,8 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
   const { theme, notificationSettings, setNotificationSettings } = useApp()
   const { permission = 'default', supported = false, requestPermission } = notificationControls || {}
   const [telegramTestStatus, setTelegramTestStatus] = useState('idle')
-  const [newCustomReminderMinutes, setNewCustomReminderMinutes] = useState(30)
+  const [newCustomReminderValue, setNewCustomReminderValue] = useState(30)
+  const [newCustomReminderUnit, setNewCustomReminderUnit] = useState('minutes')
   const defaultMoments = notificationSettings.defaultMoments || DEFAULT_NOTIFICATION_MOMENTS
   const customReminderMinutes = getCustomNotificationMinutesList(defaultMoments)
   const notificationsOn = notificationSettings.enabled && permission === 'granted'
@@ -50,16 +54,18 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
   }
 
   function addCustomDefaultMoment() {
-    const minutes = Math.max(1, Math.min(10_080, Number(newCustomReminderMinutes) || 1))
+    const minutes = customReminderToMinutes(newCustomReminderValue, newCustomReminderUnit)
 
     setNotificationSettings({
       defaultMoments: addCustomNotificationMoment(defaultMoments, minutes),
     })
-    setNewCustomReminderMinutes(minutes)
+    const reminder = splitCustomReminderMinutes(minutes)
+    setNewCustomReminderValue(reminder.value)
+    setNewCustomReminderUnit(reminder.unit)
   }
 
-  function updateCustomDefaultMinutes(oldMinutes, value) {
-    const minutes = Math.max(1, Math.min(10_080, Number(value) || 1))
+  function updateCustomDefaultReminder(oldMinutes, value, unit) {
+    const minutes = customReminderToMinutes(value, unit)
 
     setNotificationSettings({
       defaultMoments: updateCustomNotificationMoment(defaultMoments, oldMinutes, minutes),
@@ -91,7 +97,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
 
     setTelegramTestStatus('sending')
     const sent = await sendTelegramReminder(
-      'Test reminder from Antigravity Planner: Telegram notifications are working.',
+      'Test reminder from Reminder: Telegram notifications are working.',
       telegramChatId.trim()
     )
     setTelegramTestStatus(sent ? 'sent' : 'failed')
@@ -336,7 +342,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                       Custom reminders
                     </p>
                     <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Add any number of minutes-before alerts.
+                      Add alerts before new tasks start.
                     </p>
                   </div>
                   <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0
@@ -347,24 +353,35 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                 </div>
 
                 <div className="space-y-2">
-                  {customReminderMinutes.map((minutes) => (
-                    <div key={`custom-${minutes}`} className="grid grid-cols-[1fr_auto_auto] gap-2 items-center animate-fade-in">
+                  {customReminderMinutes.map((minutes) => {
+                    const reminder = splitCustomReminderMinutes(minutes)
+                    return (
+                    <div key={`custom-${minutes}`} className="grid grid-cols-[minmax(0,1fr)_7.25rem_auto] gap-2 items-center animate-fade-in">
                       <input
                         type="number"
                         min="1"
-                        max="10080"
                         step="1"
-                        value={minutes}
-                        onChange={(e) => updateCustomDefaultMinutes(minutes, e.target.value)}
+                        value={reminder.value}
+                        onChange={(e) => updateCustomDefaultReminder(minutes, e.target.value, reminder.unit)}
                         aria-label={`Custom reminder ${formatMinutesBefore(minutes)}`}
                         className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none
                           ${theme === 'dark'
                             ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
                             : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
                       />
-                      <span className={`text-xs font-medium whitespace-nowrap ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                        min before
-                      </span>
+                      <select
+                        value={reminder.unit}
+                        onChange={(e) => updateCustomDefaultReminder(minutes, reminder.value, e.target.value)}
+                        aria-label={`Custom reminder unit for ${formatMinutesBefore(minutes)}`}
+                        className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer
+                          ${theme === 'dark'
+                            ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
+                            : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
+                      >
+                        {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
+                          <option key={unit.value} value={unit.value}>{unit.label}</option>
+                        ))}
+                      </select>
                       <button
                         type="button"
                         onClick={() => removeCustomDefaultMoment(minutes)}
@@ -377,25 +394,35 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                         <Trash2 size={15} />
                       </button>
                     </div>
-                  ))}
+                    )
+                  })}
 
-                  <div className="grid grid-cols-[1fr_auto_auto] gap-2 items-center">
+                  <div className="grid grid-cols-[minmax(0,1fr)_7.25rem_auto] gap-2 items-center">
                     <input
                       type="number"
                       min="1"
-                      max="10080"
                       step="1"
-                      value={newCustomReminderMinutes}
-                      onChange={(e) => setNewCustomReminderMinutes(Math.max(1, Math.min(10_080, Number(e.target.value) || 1)))}
-                      aria-label="New custom reminder minutes"
+                      value={newCustomReminderValue}
+                      onChange={(e) => setNewCustomReminderValue(Math.max(1, Number(e.target.value) || 1))}
+                      aria-label="New custom reminder amount"
                       className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none
                         ${theme === 'dark'
                           ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
                           : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
                     />
-                    <span className={`text-xs font-medium whitespace-nowrap ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      min before
-                    </span>
+                    <select
+                      value={newCustomReminderUnit}
+                      onChange={(e) => setNewCustomReminderUnit(e.target.value)}
+                      aria-label="New custom reminder unit"
+                      className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer
+                        ${theme === 'dark'
+                          ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
+                          : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
+                    >
+                      {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
+                        <option key={unit.value} value={unit.value}>{unit.label}</option>
+                      ))}
+                    </select>
                     <button
                       type="button"
                       onClick={addCustomDefaultMoment}
@@ -432,7 +459,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
         {/* App info */}
         <div className="text-center pt-4">
           <p className={`text-xs ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>
-            Structured Daily Planner · v1.0.0
+            Reminder · v1.0.0
           </p>
           <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-700' : 'text-gray-300'}`}>
             Built with React + Supabase + Tailwind

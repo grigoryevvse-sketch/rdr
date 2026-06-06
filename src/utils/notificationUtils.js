@@ -1,12 +1,45 @@
 export const CUSTOM_NOTIFICATION_PREFIX = 'custom:'
+export const CUSTOM_NOTIFICATION_UNITS = [
+  { value: 'minutes', label: 'min', multiplier: 1 },
+  { value: 'hours', label: 'hours', multiplier: 60 },
+  { value: 'days', label: 'days', multiplier: 1_440 },
+  { value: 'weeks', label: 'weeks', multiplier: 10_080 },
+]
+export const MAX_CUSTOM_NOTIFICATION_MINUTES = 10_080
+
+function clampCustomMinutes(minutes) {
+  return Math.max(1, Math.min(MAX_CUSTOM_NOTIFICATION_MINUTES, Math.round(Number(minutes) || 1)))
+}
+
+export function customReminderToMinutes(value, unit = 'minutes') {
+  const selectedUnit = CUSTOM_NOTIFICATION_UNITS.find((option) => option.value === unit) || CUSTOM_NOTIFICATION_UNITS[0]
+  return clampCustomMinutes((Number(value) || 1) * selectedUnit.multiplier)
+}
+
+export function splitCustomReminderMinutes(minutes) {
+  const safeMinutes = clampCustomMinutes(minutes)
+  const units = [...CUSTOM_NOTIFICATION_UNITS].reverse()
+  const exactUnit = units.find((unit) => safeMinutes % unit.multiplier === 0)
+
+  if (exactUnit) {
+    return {
+      value: safeMinutes / exactUnit.multiplier,
+      unit: exactUnit.value,
+    }
+  }
+
+  return {
+    value: safeMinutes,
+    unit: 'minutes',
+  }
+}
 
 export function isCustomNotificationMoment(momentId) {
   return typeof momentId === 'string' && momentId.startsWith(CUSTOM_NOTIFICATION_PREFIX)
 }
 
 export function customNotificationId(minutes) {
-  const safeMinutes = Math.max(1, Math.min(10_080, Number(minutes) || 1))
-  return `${CUSTOM_NOTIFICATION_PREFIX}${safeMinutes}`
+  return `${CUSTOM_NOTIFICATION_PREFIX}${clampCustomMinutes(minutes)}`
 }
 
 export function getCustomNotificationMinutes(moments, fallback = 30) {
@@ -70,6 +103,14 @@ export function removeCustomNotificationMoment(moments, minutes) {
 export function formatMinutesBefore(minutes) {
   const value = Number(minutes) || 0
   if (value < 60) return `${value} min before`
+  if (value % 10_080 === 0) {
+    const weeks = value / 10_080
+    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} before`
+  }
+  if (value % 1_440 === 0) {
+    const days = value / 1_440
+    return `${days} ${days === 1 ? 'day' : 'days'} before`
+  }
   if (value % 60 === 0) {
     const hours = value / 60
     return `${hours} ${hours === 1 ? 'hour' : 'hours'} before`

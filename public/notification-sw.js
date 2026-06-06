@@ -2,7 +2,7 @@
 
 self.addEventListener('push', (event) => {
   const fallback = {
-    title: 'Antigravity Planner',
+    title: 'Reminder',
     body: 'You have a scheduled reminder.',
     icon: '/favicon.svg',
     badge: '/favicon.svg',

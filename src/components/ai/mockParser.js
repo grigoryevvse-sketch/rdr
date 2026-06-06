@@ -20,10 +20,36 @@ const WEEKDAYS = {
 }
 
 const MODEL_CANDIDATES = [
+  "gemini-3.1-flash-live-preview", // Gemini 3 Flash Live Preview.
   "gemini-3-flash-preview", // Основная Gemini 3 Flash модель для generateContent.
   "gemini-2.5-flash",       // Фолбэк.
   "gemini-2.5-flash-lite",  // Резервный фолбэк.
 ]
+
+const VALID_RECURRENCES = new Set(['daily', 'weekly', 'monthly', 'yearly'])
+const REMINDER_TOKEN_MAP = {
+  at_start: 'start',
+  start: 'start',
+  '10_min': 'before10',
+  before10: 'before10',
+  '1_hour': 'before60',
+  before60: 'before60',
+  '1_day': 'before1day',
+  before1day: 'before1day',
+  '2_days': 'before2days',
+  before2days: 'before2days',
+  '1_week': 'before1week',
+  before1week: 'before1week',
+  '1_month': 'before1month',
+  before1month: 'before1month',
+  when_finished: 'finish',
+  finish: 'finish',
+}
+
+function customReminderId(minutes) {
+  const safeMinutes = Math.max(1, Math.min(10_080, Math.round(Number(minutes) || 1)))
+  return `custom:${safeMinutes}`
+}
 
 /**
  * Helper to execute standard API call for a specific Gemini model candidate.
@@ -82,16 +108,22 @@ export async function parseTaskInput(input) {
   }
 
   const todayName = format(new Date(), 'EEEE, MMMM d, yyyy')
-  const prompt = `You are an assistant that extracts tasks from natural language inputs and formats them as JSON.
+  const prompt = `You are an advanced NLP engine for a smart calendar and task manager app. Parse the user's natural language input into one strict JSON object that matches the app's supported fields.
 User input: "${input}"
 Current date/time context: ${new Date().toISOString()} (today is: ${todayName})
 
-Extract:
-1. intent: "schedule" (if user specifies a time, duration, or calendar scheduling intent) or "inbox" (if user wants to add to list/inbox or has no time details).
-2. title: Short, capitalized title for the task (e.g. "Buy Groceries", "Dentist Appointment"). Remove dates/times from the title.
-3. date: Determine the target date based on references in the user input relative to today's date (${todayName}). Format it strictly as "YYYY-MM-DD" (e.g., "2026-06-01"). If no date or specific day is mentioned, default to today's date: "${todayISO}".
-4. time: Extract the time in 24h format "HH:MM". Set to null if intent is "inbox" or no time is specified.
-5. duration: Extract the duration in minutes as a number. Default to 30 if intent is "schedule" and no duration is specified. Set to null if intent is "inbox".
+Rules:
+1. intent must be "schedule" for calendar entries and "inbox" for loose to-do items.
+2. Use "schedule" when the user gives a date, a specific time, a recurring item, reminders, or an important calendar-like event. Use "inbox" only for chores or thoughts with no date, time, recurrence, or reminders.
+3. title should be clean and short for the UI. Remove date, time, duration, reminder, and recurrence wording. If the user writes in Russian, keep the title in Russian.
+4. date must be "YYYY-MM-DD". Resolve relative dates from today's date (${todayName}). If there is no date, use "${todayISO}" for schedule entries.
+5. time must be "HH:MM" in 24-hour format or null. If an entry belongs on the calendar but no exact time is given, set time to null; the app will use its default time.
+6. duration is minutes. Default to 30 for schedule entries when unspecified. Use null for inbox entries.
+7. repeat_frequency must be one of "daily", "weekly", "monthly", "yearly", or "none".
+8. notification_moments must contain only these app tokens: "start", "before10", "before60", "before1day", "before2days", "before1week", "before1month", "finish", or custom minute tokens like "custom:45".
+9. Birthdays and anniversaries: title format "Birthday: [Name]" or "Anniversary: [Name]", intent "schedule", repeat_frequency "yearly", reminders ["before1week", "before1day", "start"].
+10. Critical events such as flight, doctor, dentist, exam, interview, or show should include reminders ["before1day", "before60"] unless the user gives different reminders.
+11. Return only raw JSON. No markdown, no explanation.
 
 Respond ONLY with a raw JSON object matching this schema:
 {
@@ -99,7 +131,9 @@ Respond ONLY with a raw JSON object matching this schema:
   "title": "string",
   "date": "YYYY-MM-DD",
   "time": "HH:MM" | null,
-  "duration": number | null
+  "duration": number | null,
+  "repeat_frequency": "daily" | "weekly" | "monthly" | "yearly" | "none",
+  "notification_moments": []
 }`
 
   // Try each model candidate sequentially
@@ -107,14 +141,7 @@ Respond ONLY with a raw JSON object matching this schema:
     try {
       console.log(`Attempting task parsing using Gemini model: ${model}`)
       const parsed = await fetchGeminiData(model, apiKey, prompt)
-      return {
-        intent: parsed.intent || 'inbox',
-        title: parsed.title || 'New Task',
-        date: resolveParsedDate(parsed.date, input),
-        time: parsed.time,
-        duration: parsed.duration,
-        raw: input,
-      }
+      return normalizeParsedResult(parsed, input)
     } catch (error) {
       console.error(`Gemini candidate model ${model} failed:`, error.message)
       // Continue loop to try next fallback model candidate
@@ -127,6 +154,80 @@ Respond ONLY with a raw JSON object matching this schema:
 
 function getResolvedFallback(input) {
   return localRegexParse(input)
+}
+
+function normalizeParsedResult(parsed, input) {
+  const safeParsed = parsed && typeof parsed === 'object' ? parsed : {}
+  const rawIntent = safeParsed.intent
+  const time = normalizeParsedTime(safeParsed.time ?? safeParsed.start_time)
+  const repeatFrequency = normalizeRepeatFrequency(
+    safeParsed.repeat_frequency ?? safeParsed.recurrence,
+    safeParsed.is_recurring
+  )
+  const notificationMoments = normalizeNotificationMoments(
+    safeParsed.notification_moments ?? safeParsed.reminders
+  )
+  const hasCalendarMetadata = repeatFrequency !== 'none' || notificationMoments.length > 0
+  const intent = normalizeIntent(rawIntent, { time, hasCalendarMetadata })
+
+  return {
+    intent,
+    title: normalizeTitle(safeParsed.title),
+    date: resolveParsedDate(safeParsed.date ?? safeParsed.start_date, input),
+    time: intent === 'schedule' ? time : null,
+    duration: intent === 'schedule' ? normalizeDuration(safeParsed.duration) : null,
+    repeat_frequency: intent === 'schedule' ? repeatFrequency : 'none',
+    notification_moments: intent === 'schedule' ? notificationMoments : [],
+    raw: input,
+  }
+}
+
+function normalizeIntent(intent, { time, hasCalendarMetadata }) {
+  if (intent === 'schedule' || intent === 'event') return 'schedule'
+  if (intent === 'inbox' || intent === 'task') {
+    return time || hasCalendarMetadata ? 'schedule' : 'inbox'
+  }
+  return time || hasCalendarMetadata ? 'schedule' : 'inbox'
+}
+
+function normalizeTitle(title) {
+  return typeof title === 'string' && title.trim() ? title.trim() : 'New Task'
+}
+
+function normalizeParsedTime(time) {
+  return typeof time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : null
+}
+
+function normalizeDuration(duration) {
+  const value = Number(duration)
+  if (!Number.isFinite(value)) return 30
+  return Math.min(Math.max(Math.round(value), 1), 24 * 60)
+}
+
+function normalizeRepeatFrequency(recurrence, isRecurring) {
+  if (typeof recurrence === 'string') {
+    const normalized = recurrence.toLowerCase()
+    if (VALID_RECURRENCES.has(normalized)) return normalized
+  }
+
+  return isRecurring ? 'weekly' : 'none'
+}
+
+function normalizeNotificationMoments(reminders) {
+  if (!Array.isArray(reminders)) return []
+
+  return reminders.reduce((moments, reminder) => {
+    let moment = null
+    if (typeof reminder === 'number') {
+      moment = customReminderId(reminder)
+    } else if (typeof reminder === 'string') {
+      const trimmed = reminder.trim()
+      moment = REMINDER_TOKEN_MAP[trimmed] || (/^custom:\d+$/.test(trimmed) ? customReminderId(trimmed.replace('custom:', '')) : null)
+    }
+
+    if (moment && !moments.includes(moment)) moments.push(moment)
+    return moments
+  }, [])
 }
 
 function resolveParsedDate(dateValue, input) {
@@ -266,6 +367,8 @@ function localRegexParse(input) {
     date,
     time: time || (intent === 'schedule' ? '09:00' : null),
     duration: intent === 'schedule' ? duration : null,
+    repeat_frequency: 'none',
+    notification_moments: [],
     raw: input,
   }
 }
