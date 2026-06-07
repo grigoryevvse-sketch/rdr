@@ -11,15 +11,11 @@ import { DATE_LOCALES, t } from '../../utils/i18n'
 function isBirthdayTask(task) {
   const title = (task.title || '').toLowerCase()
   return (
-    title.startsWith('birthday:') ||
-    title.startsWith('день рождения:') ||
-    title.startsWith('anniversary:') ||
-    task.icon === 'cake' ||
-    (task.repeat_frequency === 'yearly' && (
-      title.includes('birthday') ||
-      title.includes('день рождения') ||
-      title.includes('anniversary')
-    ))
+    // "Birthday: Name" or "Name's Birthday" or any title containing birthday/anniversary
+    title.includes('birthday') ||
+    title.includes('день рождения') ||
+    title.includes('anniversary') ||
+    task.icon === 'cake'
   )
 }
 
@@ -189,10 +185,11 @@ export default function InboxTab({
                       ? 'bg-white/10 text-gray-400'
                       : 'bg-gray-100 text-gray-500'
 
-              // Strip "Birthday: " prefix to show only the name
-              const displayName = task.title.replace(
-                /^(birthday|день\s+рождения|anniversary)\s*:\s*/i, ''
-              )
+              // Strip "Birthday: " prefix or "'s Birthday" suffix to show only the name
+              const displayName = task.title
+                .replace(/^(birthday|день\s+рождения|anniversary)\s*:\s*/i, '')
+                .replace(/['']s\s+(birthday|anniversary)\s*$/i, '')
+                .trim() || task.title
 
               const dateLabel = nextDate
                 ? format(nextDate, 'MMMM d', { locale: DATE_LOCALES[language] })
