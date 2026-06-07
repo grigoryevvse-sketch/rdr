@@ -5,7 +5,6 @@ import { addDays, format } from 'date-fns'
 import AddTaskModal from '../calendar/AddTaskModal'
 import {
   formatDateISO,
-  formatSelectedDate,
   formatTime12h,
   getEndTime,
   isToday,
@@ -14,13 +13,19 @@ import {
 } from '../../utils/dateUtils'
 import { useApp } from '../../context/AppContext'
 import { getRepeatLabel, isRepeatingTask } from '../../utils/repeatUtils'
+import { DATE_LOCALES, t } from '../../utils/i18n'
 
 function timeToMinutes(time) {
   const [hours = 0, minutes = 0] = (time || '00:00').split(':').map(Number)
   return hours * 60 + minutes
 }
 
-function formatDuration(minutes) {
+function formatDuration(minutes, language = 'en') {
+  if (language === 'ru') {
+    if (minutes < 60) return `${minutes} мин`
+    if (minutes % 60 === 0) return `${minutes / 60} ч`
+    return `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`
+  }
   if (minutes < 60) return `${minutes} min`
   if (minutes % 60 === 0) return `${minutes / 60} hr`
   return `${Math.floor(minutes / 60)} hr ${minutes % 60} min`
@@ -57,7 +62,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
   const [selectedDateStr, setSelectedDateStr] = useState(initialDate || formatDateISO(new Date()))
   const [showModal, setShowModal] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
-  const { theme } = useApp()
+  const { theme, language } = useApp()
 
   const selectedDate = parseISO(selectedDateStr)
   const dailyTasks = useMemo(() => (
@@ -69,11 +74,11 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
 
   const firstHour = dailyTasks.length > 0
     ? formatTime12h(dailyTasks[0].start_time)
-    : 'No tasks'
+    : t(language, 'timeline.noTasks')
   const lastTask = dailyTasks[dailyTasks.length - 1]
   const lastHour = lastTask
     ? formatTime12h(getEndTime(lastTask.start_time, lastTask.duration || 0))
-    : 'Today'
+    : t(language, 'common.today')
 
   function selectDate(date) {
     setSelectedDateStr(formatDateISO(date))
@@ -96,11 +101,13 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
             <div className="flex items-center gap-2">
               <Clock3 size={20} className="text-accent" />
               <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Timeline
+                {t(language, 'timeline.header')}
               </h1>
             </div>
             <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              {isToday(selectedDate) ? 'Today' : format(selectedDate, 'EEEE')} · {formatSelectedDate(selectedDate)}
+              {isToday(selectedDate) ? t(language, 'common.today') : format(selectedDate, 'EEEE', { locale: DATE_LOCALES[language] })}
+              {' · '}
+              {format(selectedDate, 'EEEE, MMMM d', { locale: DATE_LOCALES[language] })}
             </p>
           </div>
 
@@ -114,7 +121,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                     ? 'bg-white/5 border-white/10 text-gray-300 hover:text-white'
                     : 'bg-gray-100 border-gray-200 text-gray-600 hover:text-gray-800'}`}
             >
-              Today
+              {t(language, 'common.today')}
             </button>
             <button
               onClick={() => {
@@ -122,7 +129,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                 setShowModal(true)
               }}
               className="w-10 h-10 rounded-xl flex items-center justify-center bg-accent text-white hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-md"
-              title="Add task"
+              title={t(language, 'calendar.addTask')}
             >
               <Plus size={20} strokeWidth={2.5} />
             </button>
@@ -133,7 +140,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
           <button
             onClick={() => selectDate(subDays(selectedDate, 1))}
             className={`p-2 rounded-xl transition-colors cursor-pointer ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
-            title="Previous day"
+            title={language === 'ru' ? 'Предыдущий день' : 'Previous day'}
           >
             <ChevronLeft size={18} />
           </button>
@@ -145,7 +152,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
           <button
             onClick={() => selectDate(addDays(selectedDate, 1))}
             className={`p-2 rounded-xl transition-colors cursor-pointer ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
-            title="Next day"
+            title={language === 'ru' ? 'Следующий день' : 'Next day'}
           >
             <ChevronRight size={18} />
           </button>
@@ -156,7 +163,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
         {dailyTasks.length === 0 ? (
           <div className={`h-full min-h-[18rem] flex flex-col items-center justify-center text-center ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
             <Clock3 size={40} className="mb-3 opacity-60" />
-            <p className="text-sm font-medium">No scheduled tasks</p>
+            <p className="text-sm font-medium">{t(language, 'timeline.noTasks')}</p>
           </div>
         ) : (
           <div className="relative max-w-4xl mx-auto">
@@ -193,7 +200,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                         </div>
                         <div className="min-w-0">
                           <p className={`text-xs font-semibold ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {formatTime12h(task.start_time)} - {formatTime12h(endTime)} ({formatDuration(task.duration || 0)})
+                            {formatTime12h(task.start_time)} - {formatTime12h(endTime)} ({formatDuration(task.duration || 0, language)})
                           </p>
                           <p className={`mt-1 text-base font-bold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'} ${(isOverlapping || isCompleted) ? 'line-through decoration-2 decoration-current/50' : ''}`}>
                             {task.title}
@@ -201,12 +208,12 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                           {repeats && (
                             <p className={`mt-1 flex items-center gap-1 text-xs font-semibold ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                               <Repeat2 size={12} />
-                              <span>{getRepeatLabel(task)}</span>
+                              <span>{language === 'ru' ? 'Повторяется' : getRepeatLabel(task)}</span>
                             </p>
                           )}
                           {isOverlapping && (
                             <p className="mt-2 text-sm font-bold text-[#ff8f87]">
-                              Tasks are overlapping
+                              {language === 'ru' ? 'Задачи пересекаются' : 'Tasks are overlapping'}
                             </p>
                           )}
                         </div>
@@ -222,7 +229,9 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                             : theme === 'dark'
                               ? 'border-2 border-white/15 text-gray-500 hover:text-accent hover:border-accent/60 hover:bg-accent/10'
                               : 'border-2 border-gray-200 text-gray-300 hover:text-accent hover:border-accent/50 hover:bg-accent/10'}`}
-                        title={isCompleted ? 'Mark task active' : 'Mark task complete'}
+                        title={isCompleted
+                          ? (language === 'ru' ? 'Сделать активной' : 'Mark task active')
+                          : (language === 'ru' ? 'Отметить выполненной' : 'Mark task complete')}
                       >
                         {isCompleted ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                       </button>
@@ -233,7 +242,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                           ${theme === 'dark'
                             ? 'border-2 border-[#ff8f87] text-[#ff8f87] hover:bg-[#ff8f87]/10'
                             : 'border-2 border-red-300 text-red-400 hover:bg-red-50'}`}
-                        title="Delete task"
+                        title={language === 'ru' ? 'Удалить задачу' : 'Delete task'}
                       >
                         <Trash2 size={15} />
                       </button>

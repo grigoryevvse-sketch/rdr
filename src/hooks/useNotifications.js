@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { subMonths } from 'date-fns'
 import { isSupabaseConfigured, supabase } from '../supabase'
 import { DEFAULT_NOTIFICATION_MOMENTS } from '../utils/constants'
-import { formatMinutesBefore, isCustomNotificationMoment } from '../utils/notificationUtils'
+import { isCustomNotificationMoment } from '../utils/notificationUtils'
 import { sendTelegramReminder } from '../utils/telegramUtils'
+import { notificationBody, notificationTitle, telegramNotificationText } from '../utils/i18n'
 
 const MAX_TIMEOUT_MS = 2_147_483_647
 const DUE_CHECK_INTERVAL_MS = 15_000
@@ -38,56 +39,6 @@ function getMomentDate(task, momentId) {
   if (momentId === 'before1month') return subMonths(start, 1)
   if (momentId === 'finish') return new Date(start.getTime() + (Number(task.duration) || 0) * 60_000)
   return start
-}
-
-function getMomentTitle(momentId, task) {
-  if (isCustomNotificationMoment(momentId)) {
-    const minutes = Number(momentId.split(':')[1]) || 0
-    return `${task.title} starts in ${formatMinutesBefore(minutes).replace(' before', '')}`
-  }
-  if (momentId === 'before10') return `${task.title} starts in 10 minutes`
-  if (momentId === 'before60') return `${task.title} starts in 1 hour`
-  if (momentId === 'before1day') return `${task.title} starts in 1 day`
-  if (momentId === 'before2days') return `${task.title} starts in 2 days`
-  if (momentId === 'before1week') return `${task.title} starts in 1 week`
-  if (momentId === 'before1month') return `${task.title} starts in 1 month`
-  if (momentId === 'finish') return `${task.title} is finished`
-  return `${task.title} is starting`
-}
-
-function getMomentBody(momentId) {
-  if (momentId === 'finish') return 'Your planned time for this task has ended.'
-  if (momentId === 'start') return 'Time to begin this task.'
-  return 'Upcoming task reminder.'
-}
-
-function formatTelegramLeadTime(minutes) {
-  const value = Number(minutes) || 0
-
-  if (value < 60) return `${value} ${value === 1 ? 'minute' : 'minutes'}`
-  if (value % 60 === 0) {
-    const hours = value / 60
-    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`
-  }
-
-  const hours = Math.floor(value / 60)
-  const rest = value % 60
-  return `${hours} hr ${rest} min`
-}
-
-function getTelegramMomentText(momentId, task) {
-  if (isCustomNotificationMoment(momentId)) {
-    const minutes = Number(momentId.split(':')[1]) || 0
-    return `${task.title} starts in ${formatTelegramLeadTime(minutes)}`
-  }
-  if (momentId === 'before10') return `${task.title} starts in 10 minutes`
-  if (momentId === 'before60') return `${task.title} starts in 1 hour`
-  if (momentId === 'before1day') return `${task.title} starts in 1 day`
-  if (momentId === 'before2days') return `${task.title} starts in 2 days`
-  if (momentId === 'before1week') return `${task.title} starts in 1 week`
-  if (momentId === 'before1month') return `${task.title} starts in 1 month`
-  if (momentId === 'finish') return `${task.title} is finished`
-  return `${task.title} starts now`
 }
 
 export function useNotificationScheduler(tasks, settings) {
@@ -203,6 +154,7 @@ export function useNotificationScheduler(tasks, settings) {
     const telegramChatId = String(settings?.telegramChatId || '').trim()
     const telegramEnabled = Boolean(settings?.telegramEnabled && telegramChatId)
     const browserEnabled = settings?.enabled && permission === 'granted'
+    const language = settings?.language || 'en'
 
     if (!browserEnabled && !telegramEnabled) return
 
@@ -211,8 +163,8 @@ export function useNotificationScheduler(tasks, settings) {
       if (momentId === 'start') playStartSound()
 
       if (browserEnabled) {
-        showNotification(getMomentTitle(momentId, task), {
-          body: getMomentBody(momentId),
+        showNotification(notificationTitle(momentId, task, language), {
+          body: notificationBody(momentId, language),
           tag: key,
           renotify: true,
           icon: '/favicon.svg',
@@ -222,7 +174,7 @@ export function useNotificationScheduler(tasks, settings) {
       }
 
       if (telegramEnabled) {
-        sendTelegramReminder(getTelegramMomentText(momentId, task), telegramChatId).catch(() => {})
+        sendTelegramReminder(telegramNotificationText(momentId, task, language), telegramChatId).catch(() => {})
       }
     }
     const fireIfDue = (notification, now = Date.now()) => {

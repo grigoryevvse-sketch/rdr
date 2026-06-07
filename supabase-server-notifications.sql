@@ -10,6 +10,7 @@ create table if not exists public.notification_settings (
   telegram_chat_id text,
   default_moments text[] not null default array['start']::text[],
   time_zone text not null default 'UTC',
+  language text not null default 'en' check (language in ('en', 'ru')),
   updated_at timestamptz not null default now()
 );
 
@@ -19,6 +20,7 @@ alter table public.notification_settings
   add column if not exists telegram_chat_id text,
   add column if not exists default_moments text[] not null default array['start']::text[],
   add column if not exists time_zone text not null default 'UTC',
+  add column if not exists language text not null default 'en',
   add column if not exists updated_at timestamptz not null default now();
 
 create table if not exists public.push_subscriptions (

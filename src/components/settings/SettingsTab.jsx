@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, BellOff, BellRing, Check, LogOut, Monitor, Palette, Plus, Send, Smartphone, Trash2, User } from 'lucide-react'
+import { Bell, BellOff, BellRing, Check, Languages, LogOut, Monitor, Palette, Plus, Send, Smartphone, Trash2, User } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import AccentPicker from './AccentPicker'
 import { useApp } from '../../context/AppContext'
@@ -15,9 +15,29 @@ import {
   splitCustomReminderMinutes,
   updateCustomNotificationMoment,
 } from '../../utils/notificationUtils'
+import { LANGUAGES, t } from '../../utils/i18n'
+
+const MOMENT_LABELS_RU = {
+  start: 'В начале',
+  before10: 'За 10 мин',
+  before60: 'За 1 час',
+  before1day: 'За 1 день',
+  before2days: 'За 2 дня',
+  before1week: 'За 1 неделю',
+  before1month: 'За 1 месяц',
+  finish: 'Когда закончится',
+}
+
+const UNIT_LABELS_RU = {
+  minutes: 'минут',
+  hours: 'часов',
+  days: 'дней',
+  weeks: 'недель',
+  months: 'месяцев',
+}
 
 export default function SettingsTab({ user, onSignOut, notificationControls }) {
-  const { theme, notificationSettings, setNotificationSettings } = useApp()
+  const { theme, language, setLanguage, notificationSettings, setNotificationSettings } = useApp()
   const { permission = 'default', supported = false, requestPermission } = notificationControls || {}
   const [telegramTestStatus, setTelegramTestStatus] = useState('idle')
   const [newCustomReminderValue, setNewCustomReminderValue] = useState(30)
@@ -97,18 +117,20 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
 
     setTelegramTestStatus('sending')
     const sent = await sendTelegramReminder(
-      'Test reminder from Reminder: Telegram notifications are working.',
+      language === 'ru'
+        ? 'Тестовое напоминание из Reminder: Telegram-уведомления работают.'
+        : 'Test reminder from Reminder: Telegram notifications are working.',
       telegramChatId.trim()
     )
     setTelegramTestStatus(sent ? 'sent' : 'failed')
   }
 
   function permissionLabel() {
-    if (!supported) return 'Not supported in this browser'
-    if (permission === 'granted' && notificationSettings.enabled) return 'On for this device'
-    if (permission === 'granted') return 'Allowed, currently paused'
-    if (permission === 'denied') return 'Blocked in browser settings'
-    return 'Needs permission'
+    if (!supported) return t(language, 'settings.permission.unsupported')
+    if (permission === 'granted' && notificationSettings.enabled) return t(language, 'settings.permission.grantedOn')
+    if (permission === 'granted') return t(language, 'settings.permission.grantedPaused')
+    if (permission === 'denied') return t(language, 'settings.permission.denied')
+    return t(language, 'settings.permission.default')
   }
 
   return (
@@ -116,10 +138,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
       {/* Header */}
       <div className={`safe-header px-6 pb-5 border-b ${theme === 'dark' ? 'border-white/5' : 'border-gray-200'}`}>
         <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-          Settings
+          {t(language, 'settings.title')}
         </h1>
         <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-          Customize your experience
+          {t(language, 'settings.subtitle')}
         </p>
       </div>
 
@@ -131,7 +153,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
             <div className="flex items-center gap-2 mb-4">
               <User size={16} className="text-accent" />
               <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Account
+                {t(language, 'settings.account')}
               </h2>
             </div>
             <div className="flex items-center justify-between">
@@ -147,10 +169,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                 )}
                 <div>
                   <p className={`text-sm font-medium ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                    {user.user_metadata?.full_name || user.email || 'Demo User'}
+                    {user.user_metadata?.full_name || user.email || t(language, 'settings.demoUser')}
                   </p>
                   <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                    {user.email || 'Temporary demo'}
+                    {user.email || t(language, 'settings.temporarySession')}
                   </p>
                 </div>
               </div>
@@ -160,7 +182,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                            text-red-400 hover:bg-red-500/10 transition-all cursor-pointer"
               >
                 <LogOut size={14} />
-                Sign Out
+                {t(language, 'settings.signOut')}
               </button>
             </div>
           </div>
@@ -172,10 +194,44 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
           <div className="flex items-center gap-2 mb-4">
             <Monitor size={16} className="text-accent" />
             <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Appearance
+              {t(language, 'settings.appearance')}
             </h2>
           </div>
           <ThemeToggle />
+        </div>
+
+        {/* Language */}
+        <div className={`rounded-2xl p-4
+          ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'}`}>
+          <div className="flex items-center gap-2 mb-4">
+            <Languages size={16} className="text-accent" />
+            <div>
+              <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                {t(language, 'settings.language')}
+              </h2>
+              <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                {t(language, 'settings.languageHelp')}
+              </p>
+            </div>
+          </div>
+          <div className={`grid grid-cols-2 rounded-xl border p-1 text-xs font-semibold
+            ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-gray-100 border-gray-200'}`}>
+            {LANGUAGES.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setLanguage(option.id)}
+                className={`rounded-lg px-3 py-2 transition cursor-pointer
+                  ${language === option.id
+                    ? 'bg-accent text-white shadow-sm'
+                    : theme === 'dark'
+                      ? 'text-gray-400 hover:text-white'
+                      : 'text-gray-500 hover:text-gray-800'}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Notifications */}
@@ -186,7 +242,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
               <BellRing size={16} className="text-accent shrink-0" />
               <div className="min-w-0">
                 <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  Notifications
+                  {t(language, 'settings.notifications')}
                 </h2>
                 <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
                   {permissionLabel()}
@@ -205,7 +261,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'}`}
             >
               {notificationsOn ? <Bell size={14} /> : <BellOff size={14} />}
-              {notificationsOn ? 'On' : 'Enable'}
+              {notificationsOn ? t(language, 'common.on') : t(language, 'common.enable')}
             </button>
           </div>
 
@@ -216,10 +272,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
               </span>
               <div className="min-w-0">
                 <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  Current device
+                  {t(language, 'settings.currentDevice')}
                 </p>
                 <p className={`text-xs mt-1 leading-relaxed ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-                  Turn this on separately on each Mac, iPhone, iPad, or Android device where you want alerts.
+                  {t(language, 'settings.currentDeviceHelp')}
                 </p>
               </div>
             </div>
@@ -234,10 +290,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                      Telegram
+                      {t(language, 'settings.telegram')}
                     </p>
                     <p className={`text-xs mt-1 leading-relaxed ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-                      Enter your Current chat ID after pressing Start in the bot.
+                      {t(language, 'settings.telegramHelp')}
                     </p>
                   </div>
                   <button
@@ -252,7 +308,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                           : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
                   >
                     {telegramOn ? <Bell size={14} /> : <BellOff size={14} />}
-                    {telegramOn ? 'On' : 'Off'}
+                    {telegramOn ? t(language, 'common.on') : t(language, 'common.off')}
                   </button>
                 </div>
                 <input
@@ -260,7 +316,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                   inputMode="numeric"
                   value={telegramChatId}
                   onChange={(event) => updateTelegramChatId(event.target.value)}
-                  placeholder="Your chat ID"
+                  placeholder={t(language, 'settings.chatId')}
                   className={`mt-3 w-full px-3 py-2.5 rounded-xl text-sm outline-none
                     ${theme === 'dark'
                       ? 'bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:border-accent'
@@ -275,10 +331,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                         ? 'text-gray-500'
                         : 'text-gray-400'}`}
                   >
-                    {telegramTestStatus === 'sending' && 'Sending test...'}
-                    {telegramTestStatus === 'sent' && 'Test sent'}
-                    {telegramTestStatus === 'failed' && 'Test failed'}
-                    {telegramTestStatus === 'idle' && 'Use this to confirm your chat ID.'}
+                    {telegramTestStatus === 'sending' && t(language, 'settings.testSending')}
+                    {telegramTestStatus === 'sent' && t(language, 'settings.testSent')}
+                    {telegramTestStatus === 'failed' && t(language, 'settings.testFailed')}
+                    {telegramTestStatus === 'idle' && t(language, 'settings.testIdle')}
                   </p>
                   <button
                     type="button"
@@ -290,7 +346,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                         : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
                   >
                     <Send size={14} />
-                    Test
+                    {t(language, 'settings.sendTest')}
                   </button>
                 </div>
               </div>
@@ -300,10 +356,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Default reminders for new tasks
+                {t(language, 'settings.defaultReminders')}
               </p>
               <p className="text-xs font-semibold text-accent">
-                {defaultMoments.length} selected
+                {language === 'ru' ? `${defaultMoments.length} выбрано` : `${defaultMoments.length} selected`}
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -324,7 +380,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                     <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${selected ? 'bg-accent text-white' : theme === 'dark' ? 'bg-white/5' : 'bg-white'}`}>
                       {selected && <Check size={14} />}
                     </span>
-                    <span className="text-xs font-semibold">{moment.label}</span>
+                    <span className="text-xs font-semibold">{language === 'ru' ? MOMENT_LABELS_RU[moment.id] || moment.label : moment.label}</span>
                   </button>
                 )
               })}
@@ -339,10 +395,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="min-w-0">
                     <p className={`text-xs font-semibold ${customReminderMinutes.length ? 'text-accent' : theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Custom reminders
+                      {language === 'ru' ? 'Свои напоминания' : 'Custom reminders'}
                     </p>
                     <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Add alerts before new tasks start.
+                      {language === 'ru' ? 'Добавь уведомления до начала новых задач.' : 'Add alerts before new tasks start.'}
                     </p>
                   </div>
                   <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0
@@ -379,7 +435,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                             : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
                       >
                         {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
-                          <option key={unit.value} value={unit.value}>{unit.label}</option>
+                          <option key={unit.value} value={unit.value}>{language === 'ru' ? UNIT_LABELS_RU[unit.value] || unit.label : unit.label}</option>
                         ))}
                       </select>
                       <button
@@ -404,7 +460,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                       step="1"
                       value={newCustomReminderValue}
                       onChange={(e) => setNewCustomReminderValue(Math.max(1, Number(e.target.value) || 1))}
-                      aria-label="New custom reminder amount"
+                      aria-label={language === 'ru' ? 'Новое своё напоминание' : 'New custom reminder amount'}
                       className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none
                         ${theme === 'dark'
                           ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
@@ -413,21 +469,21 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                     <select
                       value={newCustomReminderUnit}
                       onChange={(e) => setNewCustomReminderUnit(e.target.value)}
-                      aria-label="New custom reminder unit"
+                      aria-label={language === 'ru' ? 'Единица нового напоминания' : 'New custom reminder unit'}
                       className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer
                         ${theme === 'dark'
                           ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
                           : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
                     >
                       {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
-                        <option key={unit.value} value={unit.value}>{unit.label}</option>
+                        <option key={unit.value} value={unit.value}>{language === 'ru' ? UNIT_LABELS_RU[unit.value] || unit.label : unit.label}</option>
                       ))}
                     </select>
                     <button
                       type="button"
                       onClick={addCustomDefaultMoment}
                       className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center hover:opacity-90 transition cursor-pointer"
-                      aria-label="Add custom reminder"
+                      aria-label={language === 'ru' ? 'Добавить своё напоминание' : 'Add custom reminder'}
                     >
                       <Plus size={16} />
                     </button>
@@ -439,7 +495,9 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
 
           {permission === 'denied' && (
             <p className={`text-xs mt-3 leading-relaxed ${theme === 'dark' ? 'text-amber-300' : 'text-amber-700'}`}>
-              Notifications are blocked. Open your browser or system notification settings to allow this app.
+              {language === 'ru'
+                ? 'Уведомления заблокированы. Открой настройки браузера или системы, чтобы разрешить их для приложения.'
+                : 'Notifications are blocked. Open your browser or system notification settings to allow this app.'}
             </p>
           )}
         </div>
@@ -450,7 +508,7 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
           <div className="flex items-center gap-2 mb-4">
             <Palette size={16} className="text-accent" />
             <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              Accent Color
+              {t(language, 'settings.accentColor')}
             </h2>
           </div>
           <AccentPicker />
@@ -459,10 +517,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
         {/* App info */}
         <div className="text-center pt-4">
           <p className={`text-xs ${theme === 'dark' ? 'text-gray-600' : 'text-gray-400'}`}>
-            Reminder · v1.0.0
+            {t(language, 'settings.version')}
           </p>
           <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-gray-700' : 'text-gray-300'}`}>
-            Built with React + Supabase + Tailwind
+            {t(language, 'settings.builtWith')}
           </p>
         </div>
       </div>

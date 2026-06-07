@@ -5,13 +5,21 @@ import { useApp } from '../../context/AppContext'
 import { NOTIFICATION_MOMENTS } from '../../utils/constants'
 import { formatMinutesBefore, isCustomNotificationMoment } from '../../utils/notificationUtils'
 import { REPEAT_FREQUENCIES } from '../../utils/repeatUtils'
+import { DATE_LOCALES, t } from '../../utils/i18n'
 
-function formatResultDate(date) {
+const REPEAT_LABELS_RU = {
+  daily: 'Ежедневно',
+  weekly: 'Еженедельно',
+  monthly: 'Ежемесячно',
+  yearly: 'Ежегодно',
+}
+
+function formatResultDate(date, language) {
   const parsed = parseISO(date)
-  if (!isValid(parsed)) return 'Today'
-  if (isToday(parsed)) return 'Today'
-  if (isTomorrow(parsed)) return 'Tomorrow'
-  return format(parsed, 'EEEE, MMMM d')
+  if (!isValid(parsed)) return t(language, 'common.today')
+  if (isToday(parsed)) return t(language, 'common.today')
+  if (isTomorrow(parsed)) return t(language, 'common.tomorrow')
+  return format(parsed, 'EEEE, MMMM d', { locale: DATE_LOCALES[language] })
 }
 
 function getReminderLabels(result) {
@@ -26,11 +34,14 @@ function getReminderLabels(result) {
 }
 
 function ResultFields({ result, compact = false }) {
-  const { theme } = useApp()
+  const { theme, language } = useApp()
   const isSchedule = result.intent === 'schedule'
   const repeatLabel = REPEAT_FREQUENCIES.find((frequency) => (
     frequency.value === result.repeat_frequency
-  ))?.label
+  ))
+  const localizedRepeatLabel = language === 'ru'
+    ? REPEAT_LABELS_RU[repeatLabel?.value] || repeatLabel?.label
+    : repeatLabel?.label
   const reminderLabels = getReminderLabels(result)
 
   return (
@@ -38,7 +49,7 @@ function ResultFields({ result, compact = false }) {
       <div className="flex items-start gap-3">
         <AlignLeft size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
         <div>
-          <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Task</p>
+          <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{t(language, 'common.task')}</p>
           <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             {result.title}
           </p>
@@ -49,23 +60,23 @@ function ResultFields({ result, compact = false }) {
         <div className="flex items-start gap-3">
           <Clock size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
           <div>
-            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Time</p>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{t(language, 'common.time')}</p>
             <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {formatResultDate(result.date)} at {formatTime12h(result.time || '09:00')}
-              {!result.time && ' (default)'}
-              {` · ${result.duration || 30} min`}
+              {t(language, 'inbox.chatDate', formatResultDate(result.date, language), formatTime12h(result.time || '09:00'))}
+              {!result.time && t(language, 'common.defaultSuffix')}
+              {` · ${result.duration || 30} ${t(language, 'common.minuteShort')}`}
             </p>
           </div>
         </div>
       )}
 
-      {isSchedule && repeatLabel && (
+      {isSchedule && localizedRepeatLabel && (
         <div className="flex items-start gap-3">
           <Repeat size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
           <div>
-            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Repeat</p>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{t(language, 'common.repeat')}</p>
             <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {repeatLabel}
+              {localizedRepeatLabel}
             </p>
           </div>
         </div>
@@ -75,7 +86,7 @@ function ResultFields({ result, compact = false }) {
         <div className="flex items-start gap-3">
           <Bell size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
           <div>
-            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>Reminders</p>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{t(language, 'common.reminders')}</p>
             <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
               {reminderLabels.join(', ')}
             </p>
@@ -87,7 +98,7 @@ function ResultFields({ result, compact = false }) {
 }
 
 export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem }) {
-  const { theme } = useApp()
+  const { theme, language } = useApp()
   const items = result.intent === 'batch' && Array.isArray(result.items)
     ? result.items
     : [result]
@@ -102,7 +113,7 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
           ${isSchedule ? 'bg-accent/15 text-accent' : 'bg-blue-500/15 text-blue-400'}`}>
           {isSchedule ? <CalendarDays size={12} /> : <Inbox size={12} />}
-          {isBatch ? `${items.length} planned items` : (isSchedule ? 'Schedule' : 'Add to Inbox')}
+          {isBatch ? t(language, 'ai.plannedItems', items.length) : (isSchedule ? t(language, 'ai.schedule') : t(language, 'ai.addToInbox'))}
         </div>
       </div>
 
@@ -124,7 +135,7 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
                   ${theme === 'dark'
                     ? 'text-gray-500 hover:bg-white/10 hover:text-red-300'
                     : 'text-gray-400 hover:bg-white hover:text-red-500'}`}
-                title="Remove suggested event"
+                title={t(language, 'ai.removeSuggestion')}
               >
                 <Trash2 size={16} />
               </button>
@@ -144,7 +155,7 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
                      hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer"
         >
           <Check size={16} />
-          Confirm
+          {t(language, 'common.confirm')}
         </button>
         <button
           onClick={onDismiss}

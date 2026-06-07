@@ -70,11 +70,66 @@ export function isDue(triggerAt, now = Date.now()) {
   return delta <= 0 && delta > -DUE_WINDOW_MS
 }
 
-export function getMomentTitle(momentId, task) {
+function normalizeLanguage(language) {
+  return language === 'ru' ? 'ru' : 'en'
+}
+
+function pluralRu(count, one, few, many) {
+  const mod10 = Math.abs(count) % 10
+  const mod100 = Math.abs(count) % 100
+  if (mod10 === 1 && mod100 !== 11) return one
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few
+  return many
+}
+
+function formatLeadTime(minutes, language = 'en') {
+  const value = Number(minutes) || 0
+  const safeLanguage = normalizeLanguage(language)
+
+  if (safeLanguage === 'ru') {
+    if (value < 60) return `${value} ${pluralRu(value, 'минуту', 'минуты', 'минут')}`
+    if (value % 60 === 0) {
+      const hours = value / 60
+      return `${hours} ${pluralRu(hours, 'час', 'часа', 'часов')}`
+    }
+
+    const hours = Math.floor(value / 60)
+    const rest = value % 60
+    return `${hours} ч ${rest} мин`
+  }
+
+  if (value < 60) return `${value} ${value === 1 ? 'minute' : 'minutes'}`
+  if (value % 60 === 0) {
+    const hours = value / 60
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`
+  }
+
+  const hours = Math.floor(value / 60)
+  const rest = value % 60
+  return `${hours} hr ${rest} min`
+}
+
+export function getMomentTitle(momentId, task, language = 'en') {
+  const safeLanguage = normalizeLanguage(language)
+
   if (isCustomNotificationMoment(momentId)) {
     const minutes = Number(momentId.split(':')[1]) || 0
-    return `${task.title} starts in ${formatTelegramLeadTime(minutes)}`
+    return safeLanguage === 'ru'
+      ? `${task.title} начнётся через ${formatLeadTime(minutes, safeLanguage)}`
+      : `${task.title} starts in ${formatLeadTime(minutes, safeLanguage)}`
   }
+
+  if (safeLanguage === 'ru') {
+    if (momentId === 'before10') return `${task.title} начнётся через 10 минут`
+    if (momentId === 'before60') return `${task.title} начнётся через 1 час`
+    if (momentId === 'before1day') return `${task.title} начнётся через 1 день`
+    if (momentId === 'before2days') return `${task.title} начнётся через 2 дня`
+    if (momentId === 'before1week') return `${task.title} начнётся через 1 неделю`
+    if (momentId === 'before1month') return `${task.title} начнётся через 1 месяц`
+    if (momentId === 'finish') return `${task.title} завершена`
+    return `${task.title} начинается`
+  }
+
   if (momentId === 'before10') return `${task.title} starts in 10 minutes`
   if (momentId === 'before60') return `${task.title} starts in 1 hour`
   if (momentId === 'before1day') return `${task.title} starts in 1 day`
@@ -85,25 +140,26 @@ export function getMomentTitle(momentId, task) {
   return `${task.title} is starting`
 }
 
-export function getMomentBody(momentId) {
+export function getMomentBody(momentId, language = 'en') {
+  if (normalizeLanguage(language) === 'ru') {
+    if (momentId === 'finish') return 'Запланированное время этой задачи закончилось.'
+    if (momentId === 'start') return 'Пора начать эту задачу.'
+    return 'Напоминание о предстоящей задаче.'
+  }
+
   if (momentId === 'finish') return 'Your planned time for this task has ended.'
   if (momentId === 'start') return 'Time to begin this task.'
   return 'Upcoming task reminder.'
 }
 
-export function getTelegramMomentText(momentId, task) {
-  if (isCustomNotificationMoment(momentId)) {
-    const minutes = Number(momentId.split(':')[1]) || 0
-    return `${task.title} starts in ${formatTelegramLeadTime(minutes)}`
+export function getTelegramMomentText(momentId, task, language = 'en') {
+  if (momentId === 'start') {
+    return normalizeLanguage(language) === 'ru'
+      ? `${task.title} начинается сейчас`
+      : `${task.title} starts now`
   }
-  if (momentId === 'before10') return `${task.title} starts in 10 minutes`
-  if (momentId === 'before60') return `${task.title} starts in 1 hour`
-  if (momentId === 'before1day') return `${task.title} starts in 1 day`
-  if (momentId === 'before2days') return `${task.title} starts in 2 days`
-  if (momentId === 'before1week') return `${task.title} starts in 1 week`
-  if (momentId === 'before1month') return `${task.title} starts in 1 month`
-  if (momentId === 'finish') return `${task.title} is finished`
-  return `${task.title} starts now`
+
+  return getMomentTitle(momentId, task, language)
 }
 
 export async function sendTelegramMessage(text, chatId) {
@@ -192,20 +248,6 @@ function getTimeZoneOffset(timestamp, timeZone) {
 function parseTaskLocalDate(task) {
   const [year, month, day] = String(task.date).split('-').map(Number)
   return new Date(year, month - 1, day)
-}
-
-function formatTelegramLeadTime(minutes) {
-  const value = Number(minutes) || 0
-
-  if (value < 60) return `${value} ${value === 1 ? 'minute' : 'minutes'}`
-  if (value % 60 === 0) {
-    const hours = value / 60
-    return `${hours} ${hours === 1 ? 'hour' : 'hours'}`
-  }
-
-  const hours = Math.floor(value / 60)
-  const rest = value % 60
-  return `${hours} hr ${rest} min`
 }
 
 function createVapidJwt({ audience, subject, publicKey, privateKey }) {

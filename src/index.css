@@ -85,7 +85,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: #f87171;
+    background: var(--color-accent);
     z-index: 10;
   }
 
@@ -96,7 +96,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #f87171;
+    background: var(--color-accent);
   }
 
   .app-viewport {

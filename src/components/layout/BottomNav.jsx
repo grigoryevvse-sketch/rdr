@@ -1,6 +1,7 @@
 import { CalendarDays, Clock3, Inbox, Sparkles, Settings } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { TABS } from '../../utils/constants'
+import { t } from '../../utils/i18n'
 
 const navItems = [
   { id: TABS.CALENDAR, label: 'Calendar', Icon: CalendarDays },
@@ -11,13 +12,13 @@ const navItems = [
 ]
 
 export default function BottomNav() {
-  const { activeTab, setTab, theme } = useApp()
+  const { activeTab, setTab, theme, language } = useApp()
 
   return (
     <nav className={`safe-bottom-nav md:hidden flex items-center justify-around px-2 pt-1.5 border-t
       ${theme === 'dark' ? 'bg-[#111118]/90 backdrop-blur-xl border-white/5' : 'bg-white/90 backdrop-blur-xl border-gray-200'}
       fixed bottom-0 left-0 right-0 z-50`}>
-      {navItems.map(({ id, label, Icon }) => {
+      {navItems.map(({ id, Icon }) => {
         const isActive = activeTab === id
         return (
           <button
@@ -34,7 +35,7 @@ export default function BottomNav() {
           >
             <Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} />
             <span className={`text-[10px] font-medium ${isActive ? 'opacity-100' : 'opacity-60'}`}>
-              {label}
+            {t(language, `nav.${id}`)}
             </span>
           </button>
         )

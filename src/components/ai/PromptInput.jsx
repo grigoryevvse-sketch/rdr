@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Image, Loader2, Send, X } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import { t } from '../../utils/i18n'
 
 export default function PromptInput({ onSubmit, isProcessing }) {
   const [value, setValue] = useState('')
   const [image, setImage] = useState(null)
-  const { theme } = useApp()
+  const { theme, language } = useApp()
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -51,7 +52,7 @@ export default function PromptInput({ onSubmit, isProcessing }) {
               {image.name}
             </p>
             <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-              Attached image
+              {t(language, 'ai.attachedImage')}
             </p>
           </div>
           <button
@@ -61,7 +62,7 @@ export default function PromptInput({ onSubmit, isProcessing }) {
               ${theme === 'dark'
                 ? 'bg-white/5 text-gray-400 hover:bg-white/10'
                 : 'bg-white text-gray-500 hover:bg-gray-100'}`}
-            title="Remove image"
+            title={t(language, 'ai.removeImage')}
           >
             <X size={16} />
           </button>
@@ -78,7 +79,7 @@ export default function PromptInput({ onSubmit, isProcessing }) {
             handleSubmit(e)
           }
         }}
-        placeholder="e.g. Schedule a dentist appointment tomorrow at 3 PM for 45 minutes..."
+        placeholder={t(language, 'ai.placeholder')}
         rows={3}
         className={`w-full px-4 py-4 pr-28 rounded-2xl text-sm resize-none outline-none transition-all
           ${theme === 'dark'
@@ -92,7 +93,7 @@ export default function PromptInput({ onSubmit, isProcessing }) {
                    ${theme === 'dark'
                      ? 'bg-white/5 text-gray-300 hover:bg-white/10'
                      : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'}`}
-        title="Attach image"
+        title={t(language, 'ai.attachImage')}
       >
         <Image size={16} />
         <input

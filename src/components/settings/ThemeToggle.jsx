@@ -2,17 +2,21 @@ import { Sun, Moon } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 
 export default function ThemeToggle() {
-  const { theme, setTheme } = useApp()
+  const { theme, setTheme, language } = useApp()
   const isDark = theme === 'dark'
 
   return (
     <div className="flex items-center justify-between">
       <div>
         <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          {isDark ? 'Dark Mode' : 'Light Mode'}
+          {isDark
+            ? (language === 'ru' ? 'Тёмная тема' : 'Dark Mode')
+            : (language === 'ru' ? 'Светлая тема' : 'Light Mode')}
         </p>
         <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-          {isDark ? 'Easy on the eyes' : 'Bright and clear'}
+          {isDark
+            ? (language === 'ru' ? 'Мягче для глаз' : 'Easy on the eyes')
+            : (language === 'ru' ? 'Ярко и чисто' : 'Bright and clear')}
         </p>
       </div>
 

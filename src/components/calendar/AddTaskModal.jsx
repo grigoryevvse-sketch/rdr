@@ -14,6 +14,7 @@ import {
 } from '../../utils/notificationUtils'
 import * as LucideIcons from 'lucide-react'
 import { useApp } from '../../context/AppContext'
+import { t } from '../../utils/i18n'
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90, 120]
 const TIME_STEP_MINUTES = 15
@@ -21,6 +22,23 @@ const EXACT_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
 const TIME_OPTIONS = Array.from({ length: 24 * 60 / TIME_STEP_MINUTES }, (_, index) => {
   return minutesToTime(index * TIME_STEP_MINUTES)
 })
+const MOMENT_TEXT_RU = {
+  start: ['В начале', 'Когда задача начинается'],
+  before10: ['За 10 мин', 'Небольшое напоминание перед началом'],
+  before60: ['За 1 час', 'Время подготовиться'],
+  before1day: ['За 1 день', 'Напоминание за день'],
+  before2days: ['За 2 дня', 'Напоминание за два дня'],
+  before1week: ['За 1 неделю', 'Заранее для больших задач'],
+  before1month: ['За 1 месяц', 'Долгосрочное напоминание'],
+  finish: ['Когда закончится', 'Когда запланированное время закончится'],
+}
+const UNIT_LABELS_RU = {
+  minutes: 'минут',
+  hours: 'часов',
+  days: 'дней',
+  weeks: 'недель',
+  months: 'месяцев',
+}
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
@@ -55,14 +73,20 @@ function normalizeTimeInput(time) {
   return formatTime(clamp(hours || 0, 0, 23), clamp(minutes || 0, 0, 59))
 }
 
-function formatDurationLabel(minutes) {
+function formatDurationLabel(minutes, language = 'en') {
+  if (language === 'ru') {
+    if (minutes < 60) return `${minutes} мин`
+    if (minutes % 60 === 0) return `${minutes / 60} ч`
+    return `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`
+  }
+
   if (minutes < 60) return `${minutes} min`
   if (minutes % 60 === 0) return `${minutes / 60} hr`
   return `${Math.floor(minutes / 60)} hr ${minutes % 60} min`
 }
 
 export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask, mode = 'add', showDateField = false }) {
-  const { accentColor, theme, notificationSettings } = useApp()
+  const { accentColor, theme, language, notificationSettings } = useApp()
   const initialStartTime = normalizeTimeInput(initialTask?.start_time || '09:00')
   const [title, setTitle] = useState(initialTask?.title || '')
   const [date, setDate] = useState(initialTask?.date || selectedDate)
@@ -118,6 +142,16 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
     selectedTimeRef.current?.scrollIntoView({ block: 'center' })
     setExactTimeDraft(normalizeTimeInput(startTime))
   }, [startTime])
+
+  useEffect(() => {
+    if (timeInputMode !== 'scroll') return
+
+    const frameId = requestAnimationFrame(() => {
+      selectedTimeRef.current?.scrollIntoView({ block: 'center' })
+    })
+
+    return () => cancelAnimationFrame(frameId)
+  }, [timeInputMode])
 
   useEffect(() => {
     return () => {
@@ -239,7 +273,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            {mode === 'edit' ? 'Edit Task' : 'New Task'}
+            {mode === 'edit' ? t(language, 'calendar.editTask') : t(language, 'calendar.newTask')}
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/10 transition cursor-pointer">
             <X size={18} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
@@ -252,7 +286,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Task name..."
+            placeholder={t(language, 'calendar.taskName')}
             autoFocus
             className={`w-full px-4 py-3 rounded-xl text-sm outline-none transition-all
               ${fieldClass} ${theme === 'dark' ? 'placeholder-gray-500' : 'placeholder-gray-400'}`}
@@ -261,7 +295,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
           {(mode === 'edit' || showDateField) && (
             <div>
               <label className={`text-xs font-medium mb-1.5 block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Date
+                {t(language, 'calendar.date')}
               </label>
               <input
                 ref={dateInputRef}
@@ -276,14 +310,14 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
           <div>
             <div className="flex items-center justify-between gap-3 mb-2">
               <label className={`text-xs font-medium block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Start Time
+                {t(language, 'calendar.startTime')}
               </label>
               <div className={`grid grid-cols-2 rounded-xl p-1 ${theme === 'dark' ? 'bg-white/5' : 'bg-gray-100'}`}>
                 <button
                   type="button"
                   onClick={() => setTimeInputMode('scroll')}
-                  title="Choose from list"
-                  aria-label="Choose from list"
+                  title={t(language, 'calendar.chooseFromList')}
+                  aria-label={t(language, 'calendar.chooseFromList')}
                   className={`h-8 w-10 rounded-lg flex items-center justify-center transition cursor-pointer
                     ${timeInputMode === 'scroll'
                       ? 'bg-accent text-white shadow-sm'
@@ -296,8 +330,8 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                 <button
                   type="button"
                   onClick={() => setTimeInputMode('exact')}
-                  title="Enter exact time"
-                  aria-label="Enter exact time"
+                  title={t(language, 'calendar.enterExactTime')}
+                  aria-label={t(language, 'calendar.enterExactTime')}
                   className={`h-8 w-10 rounded-lg flex items-center justify-center transition cursor-pointer
                     ${timeInputMode === 'exact'
                       ? 'bg-accent text-white shadow-sm'
@@ -373,7 +407,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none ${fieldClass}`}
                     />
                     <p className={`mt-1.5 text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Ends at {formatTimeLabel(minutesToTime(timeToMinutes(startTime) + duration))}
+                      {t(language, 'calendar.endsAt')} {formatTimeLabel(minutesToTime(timeToMinutes(startTime) + duration))}
                     </p>
                   </div>
                 </div>
@@ -397,10 +431,10 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
               </span>
               <span className="min-w-0 flex-1">
                 <span className={`block text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                  Repeat this task
+                  {t(language, 'calendar.repeatThisTask')}
                 </span>
                 <span className={`block text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                  Create the next one when this task is completed
+                  {t(language, 'calendar.repeatHelp')}
                 </span>
               </span>
             </label>
@@ -408,7 +442,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
             {repeatEnabled && (
               <div className={`mt-2 rounded-2xl p-3 animate-fade-in ${panelClass}`}>
                 <label className={`text-xs font-medium mb-2 block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Repeat schedule
+                  {t(language, 'calendar.repeatSchedule')}
                 </label>
                 <select
                   value={repeatFrequency}
@@ -428,9 +462,9 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className={`text-xs font-medium block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Duration
+                {t(language, 'calendar.duration')}
               </label>
-              <span className="text-xs font-semibold text-accent">{formatDurationLabel(duration)}</span>
+              <span className="text-xs font-semibold text-accent">{formatDurationLabel(duration, language)}</span>
             </div>
             <div className={`rounded-2xl p-3 space-y-3 ${panelClass}`}>
               <div className="grid grid-cols-3 gap-2">
@@ -446,7 +480,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                           ? 'bg-white/5 text-gray-300 hover:bg-white/10'
                           : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
                   >
-                    {formatDurationLabel(minutes)}
+                    {formatDurationLabel(minutes, language)}
                   </button>
                 ))}
               </div>
@@ -461,7 +495,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                       : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
               >
-                Custom duration
+                {t(language, 'calendar.custom')}
               </button>
 
               {durationMode === 'custom' && (
@@ -476,7 +510,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                     className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none ${fieldClass}`}
                   />
                   <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                    minutes
+                    {t(language, 'common.minuteShort')}
                   </span>
                 </div>
               )}
@@ -486,7 +520,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
           {/* Icon picker */}
           <div>
             <label className={`text-xs font-medium mb-2 block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              Icon
+              {t(language, 'calendar.icon')}
             </label>
             <div className="flex gap-1.5 flex-wrap">
               {TASK_ICONS.map((iconName) => {
@@ -514,10 +548,12 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className={`text-xs font-medium block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                Notifications
+                {t(language, 'calendar.notifications')}
               </label>
               <span className={`text-[11px] font-medium ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                {notificationMoments.length ? `${notificationMoments.length} selected` : 'Off for this task'}
+                {notificationMoments.length
+                  ? (language === 'ru' ? `${notificationMoments.length} выбрано` : `${notificationMoments.length} selected`)
+                  : (language === 'ru' ? 'Выключено для этой задачи' : 'Off for this task')}
               </span>
             </div>
             <div className={`rounded-2xl p-3 space-y-2 ${panelClass}`}>
@@ -541,9 +577,9 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       <Bell size={15} />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-semibold">{moment.label}</span>
+                      <span className="block text-sm font-semibold">{language === 'ru' ? MOMENT_TEXT_RU[moment.id]?.[0] || moment.label : moment.label}</span>
                       <span className={`block text-xs ${selected ? 'text-accent/80' : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                        {moment.description}
+                        {language === 'ru' ? MOMENT_TEXT_RU[moment.id]?.[1] || moment.description : moment.description}
                       </span>
                     </span>
                   </button>
@@ -565,10 +601,10 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                   </span>
                   <span className="min-w-0">
                     <span className={`block text-sm font-semibold ${customReminderMinutes.length ? 'text-accent' : theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Custom reminders
+                      {language === 'ru' ? 'Свои напоминания' : 'Custom reminders'}
                     </span>
                     <span className={`block text-xs ${customReminderMinutes.length ? 'text-accent/80' : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Add alerts before start
+                      {language === 'ru' ? 'Добавь уведомления до начала' : 'Add alerts before start'}
                     </span>
                   </span>
                 </div>
@@ -594,7 +630,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                         className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer ${fieldClass}`}
                       >
                         {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
-                          <option key={unit.value} value={unit.value}>{unit.label}</option>
+                          <option key={unit.value} value={unit.value}>{language === 'ru' ? UNIT_LABELS_RU[unit.value] || unit.label : unit.label}</option>
                         ))}
                       </select>
                       <button
@@ -619,24 +655,24 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       step="1"
                       value={newCustomReminderValue}
                       onChange={(e) => setNewCustomReminderValue(Math.max(1, Number(e.target.value) || 1))}
-                      aria-label="New custom reminder amount"
+                      aria-label={language === 'ru' ? 'Новое своё напоминание' : 'New custom reminder amount'}
                       className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none ${fieldClass}`}
                     />
                     <select
                       value={newCustomReminderUnit}
                       onChange={(e) => setNewCustomReminderUnit(e.target.value)}
-                      aria-label="New custom reminder unit"
+                      aria-label={language === 'ru' ? 'Единица нового напоминания' : 'New custom reminder unit'}
                       className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer ${fieldClass}`}
                     >
                       {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
-                        <option key={unit.value} value={unit.value}>{unit.label}</option>
+                        <option key={unit.value} value={unit.value}>{language === 'ru' ? UNIT_LABELS_RU[unit.value] || unit.label : unit.label}</option>
                       ))}
                     </select>
                     <button
                       type="button"
                       onClick={addCustomReminder}
                       className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center hover:opacity-90 transition cursor-pointer"
-                      aria-label="Add custom reminder"
+                      aria-label={language === 'ru' ? 'Добавить своё напоминание' : 'Add custom reminder'}
                     >
                       <Plus size={16} />
                     </button>
@@ -652,7 +688,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
             className="w-full py-3 rounded-xl font-semibold text-sm text-white
                        bg-accent hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer"
           >
-            {mode === 'edit' ? 'Save Changes' : 'Add to Calendar'}
+            {mode === 'edit' ? t(language, 'calendar.saveTask') : t(language, 'calendar.addTask')}
           </button>
         </form>
       </div>

@@ -1,4 +1,9 @@
+import { useApp } from '../../context/AppContext'
+import { t } from '../../utils/i18n'
+
 export default function LoginScreen({ onSignIn, authError, isAuthConfigured }) {
+  const { language } = useApp()
+
   return (
     <div className="app-viewport flex items-center justify-center bg-[#0d0d14] relative overflow-hidden">
       {/* Ambient glow */}
@@ -10,11 +15,11 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured }) {
         <div className="mb-2">
           <img src="/favicon.svg" alt="" className="w-20 h-20 mx-auto mb-6 rounded-3xl shadow-2xl shadow-accent/25" />
           <h1 className="text-4xl font-bold text-white mb-2">Reminder</h1>
-          <p className="text-gray-400 text-lg">Smart Planner</p>
+          <p className="text-gray-400 text-lg">{t(language, 'login.subtitle')}</p>
         </div>
 
         <p className="text-gray-500 text-sm mt-6 mb-8 max-w-xs mx-auto">
-          Plan your day, remember what matters, and sync across all your devices.
+          {t(language, 'login.description')}
         </p>
 
         {/* Google Sign-In Button */}
@@ -45,7 +50,7 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured }) {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
             />
           </svg>
-          Continue with Google
+          {t(language, 'login.google')}
         </button>
 
         {authError ? (
@@ -56,7 +61,7 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured }) {
 
         {!isAuthConfigured ? (
           <p className="mt-4 max-w-sm text-sm text-amber-200/90">
-            Add your Supabase URL and anon key in .env, then restart the app to enable Google sign-in.
+            {t(language, 'login.setup')}
           </p>
         ) : null}
 
@@ -65,7 +70,7 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured }) {
           onClick={() => onSignIn('demo')}
           className="mt-4 text-gray-500 text-sm hover:text-gray-300 transition-colors cursor-pointer"
         >
-          or try a temporary demo
+          {t(language, 'login.demo')}
         </button>
       </div>
     </div>

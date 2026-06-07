@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext'
 
 export default function TaskInput({ onAdd }) {
   const [value, setValue] = useState('')
-  const { theme } = useApp()
+  const { theme, language } = useApp()
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -19,7 +19,7 @@ export default function TaskInput({ onAdd }) {
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Add a task... press Enter ↵"
+        placeholder={language === 'ru' ? 'Добавить задачу... Enter ↵' : 'Add a task... press Enter ↵'}
         className={`flex-1 px-4 py-3 rounded-xl text-sm outline-none transition-all
           ${theme === 'dark'
             ? 'bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-accent'

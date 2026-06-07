@@ -4,19 +4,12 @@ import PromptInput from './PromptInput'
 import ParseResult from './ParseResult'
 import { parseTaskInput } from './mockParser'
 import { useApp } from '../../context/AppContext'
-
-const EXAMPLE_PROMPTS = [
-  "Schedule a dentist appointment tomorrow at 3 PM for 45 minutes",
-  "Put buy groceries in my inbox",
-  "Plan a team meeting at 10 AM for 1 hour",
-  "Add call mom to my to-do list",
-  "Schedule gym session at 7 AM for 1.5 hours",
-]
+import { t } from '../../utils/i18n'
 
 export default function AITab({ onAddScheduled, onAddInbox }) {
   const [result, setResult] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const { accentColor, theme, setTab } = useApp()
+  const { accentColor, theme, language, setTab } = useApp()
 
   async function handleSubmit(text, image) {
     setIsProcessing(true)
@@ -84,11 +77,11 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
         <div className="flex items-center gap-2">
           <Sparkles size={22} className="text-accent" />
           <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-            AI Scheduler
+            {t(language, 'ai.title')}
           </h1>
         </div>
         <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-          Tell me what you need to do, and I'll organize it for you
+          {t(language, 'ai.subtitle')}
         </p>
       </div>
 
@@ -99,10 +92,10 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
         {/* Example prompts */}
         <div>
           <p className={`text-xs font-medium mb-3 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-            Try saying:
+            {t(language, 'ai.trySaying')}
           </p>
           <div className="flex flex-wrap gap-2">
-            {EXAMPLE_PROMPTS.map((prompt, i) => (
+            {t(language, 'ai.examples').map((prompt, i) => (
               <button
                 key={i}
                 onClick={() => handleSubmit(prompt)}

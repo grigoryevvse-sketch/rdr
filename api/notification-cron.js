@@ -46,6 +46,7 @@ function getSettingsForTask(settingsByUser, task) {
       telegram_enabled: Boolean(userSettings.telegram_enabled || shouldUseTelegramFallback),
       telegram_chat_id: userSettings.telegram_chat_id || fallbackTelegramChatId || '',
       time_zone: userSettings.time_zone || DEFAULT_TIME_ZONE,
+      language: userSettings.language === 'ru' ? 'ru' : 'en',
     }
   }
 
@@ -56,6 +57,7 @@ function getSettingsForTask(settingsByUser, task) {
     telegram_chat_id: fallbackTelegramChatId,
     default_moments: DEFAULT_MOMENTS,
     time_zone: DEFAULT_TIME_ZONE,
+    language: 'en',
   }
 }
 
@@ -92,7 +94,7 @@ export default async function handler(request, response) {
       .lte('date', maxTaskDate),
     supabase
       .from('notification_settings')
-      .select('user_id,browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone'),
+      .select('user_id,browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone,language'),
   ])
 
   if (tasksError || settingsError) {
@@ -159,7 +161,7 @@ async function deliverNotification(supabase, settings, task, momentId, key) {
   const deliveries = []
 
   if (settings.telegram_enabled && settings.telegram_chat_id) {
-    deliveries.push(sendTelegramMessage(getTelegramMomentText(momentId, task), settings.telegram_chat_id))
+    deliveries.push(sendTelegramMessage(getTelegramMomentText(momentId, task, settings.language), settings.telegram_chat_id))
   }
 
   if (settings.browser_enabled) {
@@ -172,8 +174,8 @@ async function deliverNotification(supabase, settings, task, momentId, key) {
     for (const row of subscriptions || []) {
       deliveries.push(
         sendWebPush(row.subscription, {
-          title: getMomentTitle(momentId, task),
-          body: getMomentBody(momentId),
+          title: getMomentTitle(momentId, task, settings.language),
+          body: getMomentBody(momentId, settings.language),
           tag: key,
           icon: '/favicon.svg',
           badge: '/favicon.svg',

@@ -41,11 +41,15 @@ function AppContent() {
     addInboxTask, toggleInboxTask, deleteInboxTask, scheduleInboxTask,
   } = useTasks(effectiveUser)
 
-  const { activeTab, theme, notificationSettings, setTab, setNotificationSettings } = useApp()
+  const { activeTab, theme, language, notificationSettings, setTab, setLanguage, setNotificationSettings } = useApp()
   const canSyncNotificationSettings = Boolean(
     isSupabaseConfigured && supabase && effectiveUser?.id && effectiveUser.id !== 'demo'
   )
-  const notificationControls = useNotificationScheduler(scheduledTasks, notificationSettings)
+  const localizedNotificationSettings = useMemo(() => ({
+    ...notificationSettings,
+    language,
+  }), [notificationSettings, language])
+  const notificationControls = useNotificationScheduler(scheduledTasks, localizedNotificationSettings)
   const [serverSettingsLoadedUserId, setServerSettingsLoadedUserId] = useState(null)
   const serverSettingsLoaded = canSyncNotificationSettings && serverSettingsLoadedUserId === effectiveUser?.id
   const notificationSettingsRef = useRef(notificationSettings)
@@ -65,7 +69,7 @@ function AppContent() {
     async function loadNotificationSettings() {
       const { data } = await supabase
         .from('notification_settings')
-        .select('browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone')
+        .select('browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone,language')
         .eq('user_id', userId)
         .maybeSingle()
 
@@ -81,6 +85,10 @@ function AppContent() {
 
         if (Array.isArray(data.default_moments)) {
           nextSettings.defaultMoments = data.default_moments
+        }
+
+        if (data.language === 'ru' || data.language === 'en') {
+          setLanguage(data.language)
         }
 
         if (
@@ -105,7 +113,7 @@ function AppContent() {
     return () => {
       cancelled = true
     }
-  }, [canSyncNotificationSettings, effectiveUser?.id, setNotificationSettings])
+  }, [canSyncNotificationSettings, effectiveUser?.id, setLanguage, setNotificationSettings])
 
   useEffect(() => {
     if (!canSyncNotificationSettings || !serverSettingsLoaded) return
@@ -122,6 +130,7 @@ function AppContent() {
             telegram_enabled: Boolean(notificationSettings.telegramEnabled && notificationSettings.telegramChatId),
             telegram_chat_id: notificationSettings.telegramChatId || null,
             default_moments: notificationSettings.defaultMoments,
+            language,
             time_zone: timeZone,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' })
@@ -135,7 +144,7 @@ function AppContent() {
     }
 
     saveNotificationSettings()
-  }, [canSyncNotificationSettings, effectiveUser?.id, notificationSettings, serverSettingsLoaded])
+  }, [canSyncNotificationSettings, effectiveUser?.id, language, notificationSettings, serverSettingsLoaded])
 
   function handleSignIn(mode) {
     if (mode === 'demo') {
@@ -209,10 +218,13 @@ function AppContent() {
         return (
           <InboxTab
             inboxTasks={inboxTasks}
+            scheduledTasks={scheduledTasks}
             onAddTask={addInboxTask}
             onToggleTask={toggleInboxTask}
             onDeleteTask={deleteInboxTask}
             onScheduleTask={handleScheduleInboxTask}
+            onToggleScheduledTask={updateScheduledTask}
+            onDeleteScheduledTask={deleteScheduledTask}
           />
         )
       case TABS.AI:
@@ -252,7 +264,7 @@ function AppContent() {
             <div className={`max-w-md rounded-2xl border p-5 text-center
               ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'}`}>
               <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-                Supabase sync is not ready
+                {language === 'ru' ? 'Синхронизация Supabase не готова' : 'Supabase sync is not ready'}
               </p>
               <p className={`mt-2 text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                 {tasksError}

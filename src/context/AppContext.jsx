@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer } from 'react'
 import { TABS, ACCENT_COLORS, DEFAULT_NOTIFICATION_MOMENTS } from '../utils/constants'
+import { normalizeLanguage } from '../utils/i18n'
 
 const NOTIFICATION_SETTINGS_KEY = 'planner-notification-settings'
 
@@ -46,6 +47,7 @@ function getInitialState() {
   return {
     activeTab: TABS.CALENDAR,
     theme: readStorageValue('planner-theme', 'dark'),
+    language: normalizeLanguage(readStorageValue('planner-language', 'en')),
     accentColor: readStorageValue('planner-accent', ACCENT_COLORS[0].hex),
     notificationSettings: loadNotificationSettings(),
   }
@@ -55,6 +57,7 @@ function getInitialState() {
 const ACTIONS = {
   SET_TAB: 'SET_TAB',
   SET_THEME: 'SET_THEME',
+  SET_LANGUAGE: 'SET_LANGUAGE',
   SET_ACCENT: 'SET_ACCENT',
   SET_NOTIFICATION_SETTINGS: 'SET_NOTIFICATION_SETTINGS',
 }
@@ -81,6 +84,8 @@ function reducer(state, action) {
       return { ...state, activeTab: action.payload }
     case ACTIONS.SET_THEME:
       return { ...state, theme: action.payload }
+    case ACTIONS.SET_LANGUAGE:
+      return { ...state, language: normalizeLanguage(action.payload) }
     case ACTIONS.SET_ACCENT:
       return { ...state, accentColor: action.payload }
     case ACTIONS.SET_NOTIFICATION_SETTINGS:
@@ -134,11 +139,17 @@ export function AppProvider({ children }) {
   }, [state.accentColor])
 
   useEffect(() => {
+    writeStorageValue('planner-language', state.language)
+    document.documentElement.lang = state.language
+  }, [state.language])
+
+  useEffect(() => {
     writeStorageValue(NOTIFICATION_SETTINGS_KEY, JSON.stringify(state.notificationSettings))
   }, [state.notificationSettings])
 
   const setTab = useCallback((tab) => dispatch({ type: ACTIONS.SET_TAB, payload: tab }), [])
   const setTheme = useCallback((theme) => dispatch({ type: ACTIONS.SET_THEME, payload: theme }), [])
+  const setLanguage = useCallback((language) => dispatch({ type: ACTIONS.SET_LANGUAGE, payload: language }), [])
   const setAccent = useCallback((color) => dispatch({ type: ACTIONS.SET_ACCENT, payload: color }), [])
   const setNotificationSettings = useCallback((settings) => {
     dispatch({ type: ACTIONS.SET_NOTIFICATION_SETTINGS, payload: settings })
@@ -147,9 +158,10 @@ export function AppProvider({ children }) {
     ...state,
     setTab,
     setTheme,
+    setLanguage,
     setAccent,
     setNotificationSettings,
-  }), [state, setTab, setTheme, setAccent, setNotificationSettings])
+  }), [state, setTab, setTheme, setLanguage, setAccent, setNotificationSettings])
 
   return (
     <AppContext.Provider value={value}>

@@ -3,7 +3,6 @@ import { Plus, ChevronLeft, ChevronRight, Calendar, Grid, CalendarDays } from 'l
 import Timeline from './Timeline'
 import AddTaskModal from './AddTaskModal'
 import {
-  formatSelectedDate,
   formatDateISO,
   formatTime12h,
   parseISO,
@@ -17,6 +16,7 @@ import {
 } from '../../utils/dateUtils'
 import { useApp } from '../../context/AppContext'
 import { format, addMonths, subMonths } from 'date-fns'
+import { DATE_LOCALES, t } from '../../utils/i18n'
 
 export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, onDeleteTask, initialDate }) {
   const [selectedDateStr, setSelectedDateStr] = useState(initialDate || formatDateISO(new Date()))
@@ -25,7 +25,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
   const [showModal, setShowModal] = useState(false)
   const [newTaskDraft, setNewTaskDraft] = useState(null)
   const [editingTask, setEditingTask] = useState(null)
-  const { theme } = useApp()
+  const { theme, language } = useApp()
 
   const selectedDate = parseISO(selectedDateStr)
 
@@ -86,7 +86,9 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
   const monthGridDays = getMonthGridDays(currentMonth)
 
   // Render day names for calendar grid (Mon-Sun)
-  const gridDayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  const gridDayNames = language === 'ru'
+    ? ['П', 'В', 'С', 'Ч', 'П', 'С', 'В']
+    : ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
   return (
     <div className="flex flex-col h-full">
@@ -98,10 +100,10 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
         <div className="flex items-center justify-between">
           <div>
             <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
-              {isToday(selectedDate) ? 'Today' : format(selectedDate, 'EEEE')}
+              {isToday(selectedDate) ? t(language, 'common.today') : format(selectedDate, 'EEEE', { locale: DATE_LOCALES[language] })}
             </h1>
             <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              {formatSelectedDate(selectedDate)}
+              {format(selectedDate, 'EEEE, MMMM d', { locale: DATE_LOCALES[language] })}
             </p>
           </div>
 
@@ -115,10 +117,10 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                   : theme === 'dark'
                     ? 'bg-white/5 border-white/10 text-gray-300 hover:text-white'
                     : 'bg-gray-100 border-gray-200 text-gray-600 hover:text-gray-800'}`}
-              title="Open Today"
+              title={t(language, 'calendar.openToday')}
             >
               <CalendarDays size={16} />
-              <span className="text-xs font-semibold">Today</span>
+              <span className="text-xs font-semibold">{t(language, 'common.today')}</span>
             </button>
 
             {/* Toggle Calendar Overview */}
@@ -130,7 +132,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                   : theme === 'dark'
                     ? 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
                     : 'bg-gray-100 border-gray-200 text-gray-500 hover:text-gray-700'}`}
-              title="Toggle Month Overview"
+              title={t(language, 'calendar.monthOverview')}
             >
               {isOverviewOpen ? <Calendar size={18} /> : <Grid size={18} />}
             </button>
@@ -161,7 +163,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
               {/* Month Navigation Row */}
               <div className="flex items-center justify-between px-1">
                 <span className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
-                  {format(currentMonth, 'MMMM yyyy')}
+                  {format(currentMonth, 'MMMM yyyy', { locale: DATE_LOCALES[language] })}
                 </span>
                 <div className="flex items-center gap-1">
                   <button
@@ -176,7 +178,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                     className={`text-[10px] font-semibold px-2 py-1 rounded-md transition-colors cursor-pointer
                       ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                   >
-                    Today
+                    {t(language, 'common.today')}
                   </button>
                   <button
                     onClick={handleNextMonth}
@@ -286,14 +288,14 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
               {/* Month Navigator for Week Strip */}
               <div className="flex items-center justify-between px-2">
                 <span className={`text-xs font-semibold ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {format(selectedDate, 'MMMM yyyy')}
+                  {format(selectedDate, 'MMMM yyyy', { locale: DATE_LOCALES[language] })}
                 </span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={handlePrevMonthDay}
                     className={`p-1 rounded-lg transition-colors cursor-pointer
                       ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-155 text-gray-600'}`}
-                    title="Previous Month"
+                    title={language === 'ru' ? 'Предыдущий месяц' : 'Previous Month'}
                   >
                     <ChevronLeft size={14} />
                   </button>
@@ -301,7 +303,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                     onClick={handleNextMonthDay}
                     className={`p-1 rounded-lg transition-colors cursor-pointer
                       ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-155 text-gray-600'}`}
-                    title="Next Month"
+                    title={language === 'ru' ? 'Следующий месяц' : 'Next Month'}
                   >
                     <ChevronRight size={14} />
                   </button>
@@ -313,7 +315,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                   onClick={handlePrevWeek}
                   className={`p-2 rounded-xl transition-colors cursor-pointer
                     ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
-                  title="Previous Week"
+                  title={language === 'ru' ? 'Предыдущая неделя' : 'Previous Week'}
                 >
                   <ChevronLeft size={18} />
                 </button>
@@ -341,7 +343,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                           }`}
                       >
                         <span className="text-[10px] font-bold opacity-60 leading-none">
-                          {format(day, 'E')[0]}
+                          {format(day, 'E', { locale: DATE_LOCALES[language] })[0]}
                         </span>
                         <span className="text-xs font-bold mt-1.5 leading-none">
                           {format(day, 'd')}
@@ -355,7 +357,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                   onClick={handleNextWeek}
                   className={`p-2 rounded-xl transition-colors cursor-pointer
                     ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
-                  title="Next Week"
+                  title={language === 'ru' ? 'Следующая неделя' : 'Next Week'}
                 >
                   <ChevronRight size={18} />
                 </button>
