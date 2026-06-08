@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { isSupabaseConfigured, supabase, supabaseConfigError } from '../supabase'
 
 function getAuthRedirectError() {
@@ -23,6 +23,37 @@ function cleanAuthRedirectUrl() {
 
   if (hasAuthParams) {
     window.history.replaceState({}, document.title, window.location.pathname)
+  }
+}
+
+export function isTelegramWebView() {
+  if (typeof window === 'undefined') return false
+
+  const userAgent = window.navigator?.userAgent || ''
+  return Boolean(window.Telegram?.WebApp || /Telegram/i.test(userAgent))
+}
+
+function getExternalGoogleAuthUrl() {
+  const url = new URL(window.location.href)
+  url.searchParams.set('external_google_auth', '1')
+  url.searchParams.delete('code')
+  url.searchParams.delete('error')
+  url.searchParams.delete('error_description')
+  url.hash = ''
+  return url.toString()
+}
+
+function openExternalGoogleAuth() {
+  const authUrl = getExternalGoogleAuthUrl()
+
+  if (window.Telegram?.WebApp?.openLink) {
+    window.Telegram.WebApp.openLink(authUrl, { try_instant_view: false })
+    return
+  }
+
+  const opened = window.open(authUrl, '_blank', 'noopener,noreferrer')
+  if (!opened) {
+    window.location.href = authUrl
   }
 }
 
@@ -93,12 +124,17 @@ export function useAuth() {
     }
   }, [])
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async ({ forceOAuth = false } = {}) => {
     setError('')
     if (!supabase) {
       const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
       setError(message)
       return { error: new Error(message) }
+    }
+
+    if (!forceOAuth && isTelegramWebView()) {
+      openExternalGoogleAuth()
+      return { error: null }
     }
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -114,14 +150,67 @@ export function useAuth() {
     }
 
     return { error: null }
-  }
+  }, [])
 
-  const signOut = async () => {
+  const signInWithTelegram = useCallback(async () => {
+    setError('')
+
+    if (!supabase) {
+      const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
+      setError(message)
+      return { error: new Error(message) }
+    }
+
+    const initData = window.Telegram?.WebApp?.initData || ''
+
+    if (!initData) {
+      const message = 'Telegram login is available only inside Telegram.'
+      setError(message)
+      return { error: new Error(message) }
+    }
+
+    try {
+      const response = await fetch('/api/telegram-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData }),
+      })
+      const body = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(body?.error || 'Could not sign in with Telegram.')
+      }
+
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: body.tokenHash,
+        type: body.verificationType || 'magiclink',
+      })
+
+      if (verifyError) {
+        throw verifyError
+      }
+
+      return { error: null }
+    } catch (error) {
+      setError(error.message || 'Could not sign in with Telegram.')
+      return { error }
+    }
+  }, [])
+
+  const signOut = useCallback(async () => {
     if (!supabase) return
     setError('')
     await supabase.auth.signOut()
     setUser(null)
-  }
+  }, [])
 
-  return { user, loading, error, isConfigured: isSupabaseConfigured, signInWithGoogle, signOut }
+  return {
+    user,
+    loading,
+    error,
+    isConfigured: isSupabaseConfigured,
+    signInWithGoogle,
+    signInWithTelegram,
+    signOut,
+  }
 }

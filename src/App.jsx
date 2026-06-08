@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { AppProvider, useApp } from './context/AppContext'
-import { useAuth } from './hooks/useAuth'
+import { isTelegramWebView, useAuth } from './hooks/useAuth'
 import { useTasks } from './hooks/useTasks'
 import { useNotificationScheduler, usePushSubscription } from './hooks/useNotifications'
 import { isSupabaseConfigured, supabase } from './supabase'
@@ -24,6 +24,7 @@ function AppContent() {
     error: authError,
     isConfigured: isAuthConfigured,
     signInWithGoogle,
+    signInWithTelegram,
     signOut,
   } = useAuth()
   const [demoMode, setDemoMode] = useState(false)
@@ -34,6 +35,7 @@ function AppContent() {
     return demoMode ? { id: 'demo', email: null, user_metadata: {} } : user
   }, [demoMode, user])
   const isLoggedIn = demoMode || !!user
+  const inTelegramWebView = isTelegramWebView()
 
   const {
     scheduledTasks, inboxTasks, loading: tasksLoading, error: tasksError,
@@ -55,6 +57,17 @@ function AppContent() {
   const notificationSettingsRef = useRef(notificationSettings)
 
   usePushSubscription(effectiveUser, notificationSettings, notificationControls.permission)
+
+  useEffect(() => {
+    if (authLoading || isLoggedIn || inTelegramWebView) return
+
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('external_google_auth') !== '1') return
+
+    url.searchParams.delete('external_google_auth')
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`)
+    signInWithGoogle({ forceOAuth: true })
+  }, [authLoading, inTelegramWebView, isLoggedIn, signInWithGoogle])
 
   useEffect(() => {
     notificationSettingsRef.current = notificationSettings
@@ -149,6 +162,8 @@ function AppContent() {
   function handleSignIn(mode) {
     if (mode === 'demo') {
       setDemoMode(true)
+    } else if (inTelegramWebView) {
+      signInWithTelegram()
     } else {
       signInWithGoogle()
     }
@@ -186,6 +201,7 @@ function AppContent() {
         onSignIn={handleSignIn}
         authError={authError}
         isAuthConfigured={isAuthConfigured}
+        inTelegramWebView={inTelegramWebView}
       />
     )
   }

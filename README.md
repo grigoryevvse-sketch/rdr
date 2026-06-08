@@ -28,6 +28,16 @@ Task data is stored in Supabase for signed-in users. Browser task storage is onl
 
 After a successful migration, the app removes the old browser task keys. Demo mode is temporary and does not persist tasks.
 
+## Telegram Mini App sign-in
+
+When the app is opened inside Telegram, it signs in with Telegram WebApp `initData` instead of sending Google OAuth through Telegram's built-in browser.
+
+1. Add your bot token to the deployment environment as `TELEGRAM_BOT_TOKEN`.
+2. Add `SUPABASE_SERVICE_ROLE_KEY` so `/api/telegram-auth` can create a one-time Supabase login token.
+3. Keep `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` configured for the browser client.
+
+Google sign-in still works normally when the app is opened in Safari, Chrome, or a desktop browser.
+
 ## Always-on notifications
 
 Telegram and browser push reminders are sent by the server, so they can still arrive after the app tab is closed.
