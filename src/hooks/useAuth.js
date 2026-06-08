@@ -37,7 +37,6 @@ export function isTelegramWebView() {
   const hash = window.location.hash || ''
   return Boolean(
     window.Telegram?.WebApp?.initData ||
-    window.Telegram?.WebApp ||
     search.includes('tgWebAppData=') ||
     hash.includes('tgWebAppData=') ||
     /Telegram/i.test(userAgent)
@@ -270,16 +269,10 @@ export function useAuth() {
       return { error: new Error(message) }
     }
 
-    if (!isTelegramWebView()) {
-      return linkGoogleIdentity()
-    }
-
     const initData = window.Telegram?.WebApp?.initData || ''
 
-    if (!initData) {
-      const message = 'Telegram account linking is available only inside Telegram.'
-      setError(message)
-      return { error: new Error(message) }
+    if (!isTelegramWebView() || !initData) {
+      return linkGoogleIdentity()
     }
 
     try {
