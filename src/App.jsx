@@ -37,6 +37,7 @@ function AppContent() {
   }, [demoMode, user])
   const isLoggedIn = demoMode || !!user
   const inTelegramWebView = isTelegramWebView()
+  const ownerUserId = effectiveUser?.task_owner_id || effectiveUser?.id
 
   const {
     scheduledTasks, inboxTasks, loading: tasksLoading, error: tasksError,
@@ -46,7 +47,7 @@ function AppContent() {
 
   const { activeTab, theme, language, notificationSettings, setTab, setLanguage, setNotificationSettings } = useApp()
   const canSyncNotificationSettings = Boolean(
-    isSupabaseConfigured && supabase && effectiveUser?.id && effectiveUser.id !== 'demo'
+    isSupabaseConfigured && supabase && ownerUserId && effectiveUser?.id !== 'demo'
   )
   const localizedNotificationSettings = useMemo(() => ({
     ...notificationSettings,
@@ -54,7 +55,7 @@ function AppContent() {
   }), [notificationSettings, language])
   const notificationControls = useNotificationScheduler(scheduledTasks, localizedNotificationSettings)
   const [serverSettingsLoadedUserId, setServerSettingsLoadedUserId] = useState(null)
-  const serverSettingsLoaded = canSyncNotificationSettings && serverSettingsLoadedUserId === effectiveUser?.id
+  const serverSettingsLoaded = canSyncNotificationSettings && serverSettingsLoadedUserId === ownerUserId
   const notificationSettingsRef = useRef(notificationSettings)
 
   usePushSubscription(effectiveUser, notificationSettings, notificationControls.permission)
@@ -78,7 +79,7 @@ function AppContent() {
     if (!canSyncNotificationSettings) return
 
     let cancelled = false
-    const userId = effectiveUser.id
+    const userId = ownerUserId
 
     async function loadNotificationSettings() {
       const { data } = await supabase
@@ -127,7 +128,7 @@ function AppContent() {
     return () => {
       cancelled = true
     }
-  }, [canSyncNotificationSettings, effectiveUser?.id, setLanguage, setNotificationSettings])
+  }, [canSyncNotificationSettings, ownerUserId, setLanguage, setNotificationSettings])
 
   useEffect(() => {
     if (!canSyncNotificationSettings || !serverSettingsLoaded) return
@@ -138,8 +139,8 @@ function AppContent() {
       try {
         const { error } = await supabase
           .from('notification_settings')
-          .upsert({
-            user_id: effectiveUser.id,
+            .upsert({
+            user_id: ownerUserId,
             browser_enabled: Boolean(notificationSettings.enabled),
             telegram_enabled: Boolean(notificationSettings.telegramEnabled && notificationSettings.telegramChatId),
             telegram_chat_id: notificationSettings.telegramChatId || null,
@@ -158,7 +159,7 @@ function AppContent() {
     }
 
     saveNotificationSettings()
-  }, [canSyncNotificationSettings, effectiveUser?.id, language, notificationSettings, serverSettingsLoaded])
+  }, [canSyncNotificationSettings, ownerUserId, language, notificationSettings, serverSettingsLoaded])
 
   function handleSignIn(mode) {
     if (mode === 'demo') {

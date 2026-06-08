@@ -35,11 +35,12 @@ When the app is opened inside Telegram, it signs in with Telegram WebApp `initDa
 1. Add your bot token to the deployment environment as `TELEGRAM_BOT_TOKEN`.
 2. Add `SUPABASE_SERVICE_ROLE_KEY` so `/api/telegram-auth` can create a one-time Supabase login token.
 3. Keep `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` configured for the browser client.
-4. Enable manual identity linking in Supabase Auth settings so Telegram users can connect Google from Settings.
+4. For existing projects, run `supabase-account-links.sql` in the Supabase SQL editor.
+5. Optional: add `ACCOUNT_LINK_SECRET` for signing account-link tokens. If omitted, the service role key is used.
 
 Google sign-in still works normally when the app is opened in Safari, Chrome, or a desktop browser.
 
-Telegram users can connect Google from Settings. The app opens a normal browser, signs into the same Supabase user with a one-time token, then links the Google identity so both sign-in methods share the same Reminder tasks.
+Telegram users can connect Google from Settings. The app opens a normal browser, signs into Google, then records an app-level account link so both sign-in methods share the same Reminder tasks even when Supabase keeps Telegram and Google as separate auth users.
 
 ## Always-on notifications
 

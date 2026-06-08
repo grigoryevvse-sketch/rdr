@@ -51,7 +51,11 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
   const telegramOn = Boolean(notificationSettings.telegramEnabled && telegramChatId.trim())
   const providers = user?.app_metadata?.providers || []
   const isTelegramUser = user?.user_metadata?.provider === 'telegram' || String(user?.email || '').startsWith('telegram-')
-  const googleConnected = providers.includes('google') || user?.identities?.some((identity) => identity.provider === 'google')
+  const googleConnected = Boolean(
+    user?.google_connected ||
+    providers.includes('google') ||
+    user?.identities?.some((identity) => identity.provider === 'google')
+  )
   const showGoogleConnect = Boolean(isTelegramUser && !googleConnected && onConnectGoogle)
 
   async function enableNotifications() {

@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import accountLinkHandler from './api/account-link.js'
 import telegramAuthHandler from './api/telegram-auth.js'
 import telegramReminderHandler from './api/telegram-reminder.js'
 
@@ -13,6 +14,11 @@ function localApiPlugin() {
       process.env.SUPABASE_SERVICE_ROLE_KEY ||= env.SUPABASE_SERVICE_ROLE_KEY
       process.env.TELEGRAM_BOT_TOKEN ||= env.TELEGRAM_BOT_TOKEN
       process.env.TELEGRAM_CHAT_ID ||= env.TELEGRAM_CHAT_ID
+      process.env.ACCOUNT_LINK_SECRET ||= env.ACCOUNT_LINK_SECRET
+
+      server.middlewares.use('/api/account-link', (request, response) => {
+        accountLinkHandler(request, response)
+      })
 
       server.middlewares.use('/api/telegram-auth', (request, response) => {
         telegramAuthHandler(request, response)

@@ -189,6 +189,7 @@ export function useTasks(user) {
   const [error, setError] = useState(supabaseConfigError)
   const isDemoUser = user?.id === 'demo'
   const canUseSupabase = Boolean(isSupabaseConfigured && user && !isDemoUser && supabase)
+  const ownerId = user?.task_owner_id || user?.id
 
   const reportSupabaseError = useCallback((err, fallbackMessage) => {
     const message = err?.message || fallbackMessage
@@ -197,12 +198,12 @@ export function useTasks(user) {
   }, [])
 
   const loadFromSupabase = useCallback(async () => {
-    if (!supabase) return
+    if (!supabase || !ownerId) return
     try {
-      await migrateLocalTasksToSupabase(user.id)
+      await migrateLocalTasksToSupabase(ownerId)
       const [{ data: st }, { data: it }] = await Promise.all([
-        supabase.from('scheduled_tasks').select('*').eq('user_id', user.id).order('start_time'),
-        supabase.from('inbox_tasks').select('*').eq('user_id', user.id).order('created_at'),
+        supabase.from('scheduled_tasks').select('*').eq('user_id', ownerId).order('start_time'),
+        supabase.from('inbox_tasks').select('*').eq('user_id', ownerId).order('created_at'),
       ])
       setScheduledTasks(mergeLocalNotificationMoments(st || []))
       setInboxTasks(it || [])
@@ -213,7 +214,7 @@ export function useTasks(user) {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [ownerId])
 
   // ─── Load tasks ───
   useEffect(() => {
@@ -233,7 +234,7 @@ export function useTasks(user) {
       const scheduled = supabase
         .channel('scheduled-tasks')
         .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'scheduled_tasks', filter: `user_id=eq.${user.id}` },
+          { event: '*', schema: 'public', table: 'scheduled_tasks', filter: `user_id=eq.${ownerId}` },
           () => loadFromSupabase()
         )
         .subscribe()
@@ -241,7 +242,7 @@ export function useTasks(user) {
       const inbox = supabase
         .channel('inbox-tasks')
         .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'inbox_tasks', filter: `user_id=eq.${user.id}` },
+          { event: '*', schema: 'public', table: 'inbox_tasks', filter: `user_id=eq.${ownerId}` },
           () => loadFromSupabase()
         )
         .subscribe()
@@ -273,7 +274,7 @@ export function useTasks(user) {
     return () => {
       cancelled = true
     }
-  }, [user, canUseSupabase, isDemoUser, loadFromSupabase])
+  }, [ownerId, canUseSupabase, isDemoUser, loadFromSupabase])
 
   // ─── Scheduled Task CRUD ───
   const addScheduledTask = useCallback(async (task) => {
@@ -283,7 +284,7 @@ export function useTasks(user) {
     })
     if (canUseSupabase) {
       try {
-        await insertScheduledTask(newTask, user.id)
+        await insertScheduledTask(newTask, ownerId)
         setScheduledTasks((current) => [...current, newTask])
       } catch (err) {
         reportSupabaseError(err, 'Could not add scheduled task.')
@@ -291,7 +292,7 @@ export function useTasks(user) {
     } else {
       setScheduledTasks((current) => isDemoUser ? [...current, newTask] : current)
     }
-  }, [user, canUseSupabase, isDemoUser, reportSupabaseError])
+  }, [ownerId, canUseSupabase, isDemoUser, reportSupabaseError])
 
   const updateScheduledTask = useCallback(async (id, updates) => {
     const existingTask = scheduledTasks.find((task) => task.id === id)
@@ -316,7 +317,7 @@ export function useTasks(user) {
       try {
         const { error: updateError } = await supabase.from('scheduled_tasks').update(updates).eq('id', id)
         if (updateError) throw updateError
-        if (nextRepeatTask) await insertScheduledTask(nextRepeatTask, user.id)
+        if (nextRepeatTask) await insertScheduledTask(nextRepeatTask, ownerId)
         applyLocalUpdate()
       } catch (err) {
         reportSupabaseError(err, 'Could not update scheduled task.')
@@ -324,7 +325,7 @@ export function useTasks(user) {
     } else {
       if (isDemoUser) applyLocalUpdate()
     }
-  }, [user, canUseSupabase, isDemoUser, scheduledTasks, reportSupabaseError])
+  }, [ownerId, canUseSupabase, isDemoUser, scheduledTasks, reportSupabaseError])
 
   const deleteScheduledTask = useCallback(async (id) => {
     if (canUseSupabase) {
@@ -345,7 +346,7 @@ export function useTasks(user) {
     const newTask = { id: generateId(), title, completed: false }
     if (canUseSupabase) {
       try {
-        const { error: insertError } = await supabase.from('inbox_tasks').insert({ ...newTask, user_id: user.id })
+        const { error: insertError } = await supabase.from('inbox_tasks').insert({ ...newTask, user_id: ownerId })
         if (insertError) throw insertError
         setInboxTasks((current) => [...current, newTask])
       } catch (err) {
@@ -354,7 +355,7 @@ export function useTasks(user) {
     } else {
       setInboxTasks((current) => isDemoUser ? [...current, newTask] : current)
     }
-  }, [user, canUseSupabase, isDemoUser, reportSupabaseError])
+  }, [ownerId, canUseSupabase, isDemoUser, reportSupabaseError])
 
   const toggleInboxTask = useCallback(async (id) => {
     const task = inboxTasks.find(t => t.id === id)
@@ -393,7 +394,7 @@ export function useTasks(user) {
     })
     if (canUseSupabase) {
       try {
-        await insertScheduledTask(newTask, user.id)
+        await insertScheduledTask(newTask, ownerId)
         const { error: deleteError } = await supabase.from('inbox_tasks').delete().eq('id', inboxTaskId)
         if (deleteError) throw deleteError
         setScheduledTasks((current) => [...current, newTask])
@@ -407,7 +408,7 @@ export function useTasks(user) {
         setInboxTasks((current) => current.filter((inboxTask) => inboxTask.id !== inboxTaskId))
       }
     }
-  }, [user, canUseSupabase, isDemoUser, reportSupabaseError])
+  }, [ownerId, canUseSupabase, isDemoUser, reportSupabaseError])
 
   return {
     scheduledTasks,

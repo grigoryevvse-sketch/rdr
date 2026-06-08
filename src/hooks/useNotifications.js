@@ -245,6 +245,7 @@ export function usePushSubscription(user, settings, permission) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
 
     let cancelled = false
+    const ownerId = user.task_owner_id || user.id
 
     async function subscribe() {
       const registration = await navigator.serviceWorker.ready
@@ -263,7 +264,7 @@ export function usePushSubscription(user, settings, permission) {
       await supabase
         .from('push_subscriptions')
         .upsert({
-          user_id: user.id,
+          user_id: ownerId,
           endpoint: payload.endpoint,
           subscription: payload,
           enabled: true,

@@ -1,6 +1,8 @@
 import { useCallback, useState, useEffect } from 'react'
 import { isSupabaseConfigured, supabase, supabaseConfigError } from '../supabase'
 
+const PENDING_GOOGLE_LINK_KEY = 'planner-pending-google-link-token'
+
 function getAuthRedirectError() {
   const params = new URLSearchParams(window.location.search)
   const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
@@ -24,10 +26,19 @@ async function getCurrentUserWithIdentities(fallbackUser = null) {
   }
 
   const { data: identitiesData } = await supabase.auth.getUserIdentities()
+  const { data: links } = await supabase
+    .from('account_links')
+    .select('primary_user_id,linked_user_id,provider')
+    .or(`primary_user_id.eq.${currentUser.id},linked_user_id.eq.${currentUser.id}`)
 
+  const accountLinks = Array.isArray(links) ? links : []
+  const primaryLink = accountLinks.find((link) => link.linked_user_id === currentUser.id)
   return {
     ...currentUser,
+    account_links: accountLinks,
     identities: identitiesData?.identities || currentUser.identities || [],
+    google_connected: accountLinks.some((link) => link.provider === 'google'),
+    task_owner_id: primaryLink?.primary_user_id || currentUser.id,
   }
 }
 
@@ -139,12 +150,77 @@ async function redirectToGoogleIdentityLink(setError) {
   return { error: null }
 }
 
-function getTelegramGoogleLinkUrl(tokenHash, verificationType) {
+async function startGoogleAccountLink(linkToken, setError) {
+  if (!supabase) {
+    const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
+    setError(message)
+    return { error: new Error(message) }
+  }
+
+  if (!linkToken) {
+    const message = 'Account link token is missing.'
+    setError(message)
+    return { error: new Error(message) }
+  }
+
+  localStorage.setItem(PENDING_GOOGLE_LINK_KEY, linkToken)
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}${window.location.pathname}?complete_google_link=1`,
+      queryParams: {
+        prompt: 'select_account',
+      },
+    },
+  })
+
+  if (error) {
+    setError(error.message)
+    return { error }
+  }
+
+  return { error: null }
+}
+
+async function completeGoogleAccountLink(session, setError) {
+  const linkToken = localStorage.getItem(PENDING_GOOGLE_LINK_KEY)
+
+  if (!linkToken || !session?.access_token) {
+    const message = 'Account link session is missing.'
+    setError(message)
+    return { error: new Error(message) }
+  }
+
+  const response = await withTimeout(
+    fetch('/api/account-link', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ linkToken }),
+    }),
+    10_000,
+    'Account linking timed out. Try again.'
+  )
+  const body = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    const error = new Error(body?.error || 'Could not link Google account.')
+    setError(error.message)
+    return { error }
+  }
+
+  localStorage.removeItem(PENDING_GOOGLE_LINK_KEY)
+  return { error: null, data: body }
+}
+
+function getTelegramGoogleLinkUrl(linkToken) {
   const url = new URL(`${window.location.origin}${window.location.pathname}`)
   url.searchParams.set('telegram_google_link', '1')
   url.searchParams.set('force_browser_flow', '1')
-  url.searchParams.set('telegram_token_hash', tokenHash)
-  url.searchParams.set('telegram_verification_type', verificationType || 'magiclink')
+  url.searchParams.set('account_link_token', linkToken)
   url.hash = ''
   return url.toString()
 }
@@ -168,66 +244,19 @@ export function useAuth() {
     async function loadSession() {
       const params = new URLSearchParams(window.location.search)
       if (params.get('telegram_google_link') === '1') {
-        const tokenHash = params.get('telegram_token_hash') || ''
-        const verificationType = params.get('telegram_verification_type') || 'magiclink'
+        const linkToken = params.get('account_link_token') || ''
 
         params.delete('telegram_google_link')
         params.delete('force_browser_flow')
-        params.delete('telegram_token_hash')
-        params.delete('telegram_verification_type')
+        params.delete('account_link_token')
         const nextUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ''}${window.location.hash}`
         window.history.replaceState({}, document.title, nextUrl)
 
-        if (!tokenHash) {
-          setError('Google connection token is missing.')
-          setLoading(false)
-          return
-        }
-
-        const { data: verifyData, error: verifyError } = await withTimeout(
-          supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: verificationType || 'magiclink',
-          }),
-          10_000,
-          'Telegram connection timed out. Try again.'
-        )
-
-        if (!isMounted) return
-
-        if (verifyError) {
-          setError(verifyError.message)
-          setLoading(false)
-          return
-        }
-
-        if (verifyData?.session?.access_token && verifyData?.session?.refresh_token) {
-          const { error: setSessionError } = await withTimeout(
-            supabase.auth.setSession({
-              access_token: verifyData.session.access_token,
-              refresh_token: verifyData.session.refresh_token,
-            }),
-            10_000,
-            'Could not save the Telegram session. Try again.'
-          )
-
-          if (!isMounted) return
-
-          if (setSessionError) {
-            setError(setSessionError.message)
-            setLoading(false)
-            return
-          }
-        }
-
-        const { error: linkError } = await redirectToGoogleIdentityLink(setError)
+        const { error: linkError } = await startGoogleAccountLink(linkToken, setError)
         if (linkError && isMounted) {
           setLoading(false)
           return
         }
-        window.setTimeout(() => {
-          if (isMounted) setLoading(false)
-        }, 1500)
         return
       }
 
@@ -239,6 +268,7 @@ export function useAuth() {
 
       const urlParams = new URLSearchParams(window.location.search)
       const code = urlParams.get('code')
+      const shouldCompleteGoogleLink = urlParams.get('complete_google_link') === '1'
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
         cleanAuthRedirectUrl()
@@ -254,6 +284,15 @@ export function useAuth() {
       if (sessionError) {
         setError(sessionError.message)
       }
+
+      if (shouldCompleteGoogleLink && session) {
+        const { error: linkError } = await completeGoogleAccountLink(session, setError)
+        if (linkError) {
+          setLoading(false)
+          return
+        }
+      }
+
       const freshUser = session?.user
         ? await getCurrentUserWithIdentities(session.user)
         : null
@@ -408,42 +447,10 @@ export function useAuth() {
         throw new Error(body?.error || 'Could not prepare Google connection.')
       }
 
-      openExternalUrl(getTelegramGoogleLinkUrl(body.tokenHash, body.verificationType))
+      openExternalUrl(getTelegramGoogleLinkUrl(body.linkToken))
       return { error: null }
     } catch (error) {
       setError(error.message || 'Could not prepare Google connection.')
-      return { error }
-    }
-  }, [linkGoogleIdentity])
-
-  const completeTelegramGoogleLink = useCallback(async ({ tokenHash, verificationType } = {}) => {
-    setError('')
-
-    if (!supabase) {
-      const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
-      setError(message)
-      return { error: new Error(message) }
-    }
-
-    if (!tokenHash) {
-      const message = 'Google connection token is missing.'
-      setError(message)
-      return { error: new Error(message) }
-    }
-
-    try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: verificationType || 'magiclink',
-      })
-
-      if (verifyError) {
-        throw verifyError
-      }
-
-      return linkGoogleIdentity()
-    } catch (error) {
-      setError(error.message || 'Could not connect Google account.')
       return { error }
     }
   }, [linkGoogleIdentity])
@@ -463,7 +470,6 @@ export function useAuth() {
     signInWithGoogle,
     signInWithTelegram,
     connectGoogleAccount,
-    completeTelegramGoogleLink,
     signOut,
   }
 }

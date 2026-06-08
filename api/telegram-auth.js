@@ -1,4 +1,5 @@
 import crypto from 'node:crypto'
+import { createAccountLinkToken } from './lib/account-link-token.js'
 import { createSupabaseAdmin } from './lib/notification-helpers.js'
 
 const TELEGRAM_AUTH_MAX_AGE_MS = 24 * 60 * 60 * 1000
@@ -149,6 +150,10 @@ export default async function handler(request, response) {
 
     sendJson(response, 200, {
       email,
+      linkToken: createAccountLinkToken({
+        primaryUserId: data.user.id,
+        telegramUserId: telegramUser.id,
+      }),
       tokenHash: data.properties.hashed_token,
       verificationType: data.properties.verification_type,
     })
