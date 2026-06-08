@@ -235,10 +235,14 @@ export function useAuth() {
       return { error: new Error(message) }
     }
 
-    const { error } = await supabase.auth.linkIdentity({
+    const { data, error } = await supabase.auth.linkIdentity({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}${window.location.pathname}?google_linked=1`,
+        queryParams: {
+          prompt: 'select_account',
+        },
+        skipBrowserRedirect: true,
       },
     })
 
@@ -247,6 +251,13 @@ export function useAuth() {
       return { error }
     }
 
+    if (!data?.url) {
+      const missingUrlError = new Error('Google connection URL was not returned by Supabase.')
+      setError(missingUrlError.message)
+      return { error: missingUrlError }
+    }
+
+    window.location.assign(data.url)
     return { error: null }
   }, [])
 

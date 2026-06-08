@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, BellOff, BellRing, Check, Languages, Link, LogOut, Monitor, Palette, Plus, Send, Smartphone, Trash2, User } from 'lucide-react'
+import { Bell, BellOff, BellRing, Check, Languages, Link, Loader2, LogOut, Monitor, Palette, Plus, Send, Smartphone, Trash2, User } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import AccentPicker from './AccentPicker'
 import { useApp } from '../../context/AppContext'
@@ -40,6 +40,8 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
   const { theme, language, setLanguage, notificationSettings, setNotificationSettings } = useApp()
   const { permission = 'default', supported = false, requestPermission } = notificationControls || {}
   const [telegramTestStatus, setTelegramTestStatus] = useState('idle')
+  const [googleConnectStatus, setGoogleConnectStatus] = useState('idle')
+  const [googleConnectError, setGoogleConnectError] = useState('')
   const [newCustomReminderValue, setNewCustomReminderValue] = useState(30)
   const [newCustomReminderUnit, setNewCustomReminderUnit] = useState('minutes')
   const defaultMoments = notificationSettings.defaultMoments || DEFAULT_NOTIFICATION_MOMENTS
@@ -129,6 +131,23 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
     setTelegramTestStatus(sent ? 'sent' : 'failed')
   }
 
+  async function connectGoogle() {
+    if (!onConnectGoogle || googleConnectStatus === 'connecting') return
+
+    setGoogleConnectStatus('connecting')
+    setGoogleConnectError('')
+
+    const result = await onConnectGoogle()
+
+    if (result?.error) {
+      setGoogleConnectError(result.error.message || t(language, 'settings.googleConnectFailed'))
+      setGoogleConnectStatus('failed')
+      return
+    }
+
+    setGoogleConnectStatus('idle')
+  }
+
   function permissionLabel() {
     if (!supported) return t(language, 'settings.permission.unsupported')
     if (permission === 'granted' && notificationSettings.enabled) return t(language, 'settings.permission.grantedOn')
@@ -202,16 +221,23 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                   </div>
                   <button
                     type="button"
-                    onClick={onConnectGoogle}
+                    onClick={connectGoogle}
+                    disabled={googleConnectStatus === 'connecting'}
                     className={`h-9 px-3 rounded-xl flex items-center gap-2 text-xs font-semibold transition cursor-pointer shrink-0
+                      disabled:cursor-not-allowed disabled:opacity-60
                       ${theme === 'dark'
                         ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
                         : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
                   >
-                    <Link size={14} />
-                    {t(language, 'settings.connect')}
+                    {googleConnectStatus === 'connecting' ? <Loader2 size={14} className="animate-spin" /> : <Link size={14} />}
+                    {googleConnectStatus === 'connecting' ? t(language, 'settings.connecting') : t(language, 'settings.connect')}
                   </button>
                 </div>
+                {googleConnectError ? (
+                  <p className="mt-3 text-xs leading-relaxed text-red-400">
+                    {googleConnectError}
+                  </p>
+                ) : null}
               </div>
             ) : googleConnected ? (
               <div className={`mt-4 rounded-2xl p-3 flex items-center gap-3 ${theme === 'dark' ? 'bg-white/[0.04] border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
