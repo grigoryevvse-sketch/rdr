@@ -13,6 +13,24 @@ function getAuthRedirectError() {
   )
 }
 
+async function getCurrentUserWithIdentities(fallbackUser = null) {
+  if (!supabase) return fallbackUser
+
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  const currentUser = userData?.user || fallbackUser
+
+  if (userError || !currentUser) {
+    return fallbackUser
+  }
+
+  const { data: identitiesData } = await supabase.auth.getUserIdentities()
+
+  return {
+    ...currentUser,
+    identities: identitiesData?.identities || currentUser.identities || [],
+  }
+}
+
 function cleanAuthRedirectUrl() {
   const hasAuthParams = (
     window.location.search.includes('code=') ||
@@ -219,7 +237,8 @@ export function useAuth() {
         cleanAuthRedirectUrl()
       }
 
-      const code = new URLSearchParams(window.location.search).get('code')
+      const urlParams = new URLSearchParams(window.location.search)
+      const code = urlParams.get('code')
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
         cleanAuthRedirectUrl()
@@ -235,7 +254,13 @@ export function useAuth() {
       if (sessionError) {
         setError(sessionError.message)
       }
-      setUser(session?.user ?? null)
+      const freshUser = session?.user
+        ? await getCurrentUserWithIdentities(session.user)
+        : null
+
+      if (!isMounted) return
+
+      setUser(freshUser ?? session?.user ?? null)
       setLoading(false)
     }
 
@@ -252,8 +277,23 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setError('')
-        setUser(session?.user ?? null)
-        setLoading(false)
+        if (!session?.user) {
+          setUser(null)
+          setLoading(false)
+          return
+        }
+
+        getCurrentUserWithIdentities(session.user)
+          .then((freshUser) => {
+            if (!isMounted) return
+            setUser(freshUser ?? session.user)
+            setLoading(false)
+          })
+          .catch(() => {
+            if (!isMounted) return
+            setUser(session.user)
+            setLoading(false)
+          })
       }
     )
 
