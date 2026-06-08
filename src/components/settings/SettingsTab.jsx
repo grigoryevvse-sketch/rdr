@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Bell, BellOff, BellRing, Check, Languages, LogOut, Monitor, Palette, Plus, Send, Smartphone, Trash2, User } from 'lucide-react'
+import { Bell, BellOff, BellRing, Check, Languages, Link, LogOut, Monitor, Palette, Plus, Send, Smartphone, Trash2, User } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import AccentPicker from './AccentPicker'
 import { useApp } from '../../context/AppContext'
@@ -36,7 +36,7 @@ const UNIT_LABELS_RU = {
   months: 'месяцев',
 }
 
-export default function SettingsTab({ user, onSignOut, notificationControls }) {
+export default function SettingsTab({ user, onSignOut, onConnectGoogle, notificationControls }) {
   const { theme, language, setLanguage, notificationSettings, setNotificationSettings } = useApp()
   const { permission = 'default', supported = false, requestPermission } = notificationControls || {}
   const [telegramTestStatus, setTelegramTestStatus] = useState('idle')
@@ -47,6 +47,10 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
   const notificationsOn = notificationSettings.enabled && permission === 'granted'
   const telegramChatId = notificationSettings.telegramChatId || ''
   const telegramOn = Boolean(notificationSettings.telegramEnabled && telegramChatId.trim())
+  const providers = user?.app_metadata?.providers || []
+  const isTelegramUser = user?.user_metadata?.provider === 'telegram' || String(user?.email || '').startsWith('telegram-')
+  const googleConnected = providers.includes('google') || user?.identities?.some((identity) => identity.provider === 'google')
+  const showGoogleConnect = Boolean(isTelegramUser && !googleConnected && onConnectGoogle)
 
   async function enableNotifications() {
     const result = await requestPermission?.()
@@ -185,6 +189,45 @@ export default function SettingsTab({ user, onSignOut, notificationControls }) {
                 {t(language, 'settings.signOut')}
               </button>
             </div>
+            {showGoogleConnect ? (
+              <div className={`mt-4 rounded-2xl p-3 ${theme === 'dark' ? 'bg-white/[0.04] border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                      {t(language, 'settings.googleConnect')}
+                    </p>
+                    <p className={`text-xs mt-1 leading-relaxed ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                      {t(language, 'settings.googleConnectHelp')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onConnectGoogle}
+                    className={`h-9 px-3 rounded-xl flex items-center gap-2 text-xs font-semibold transition cursor-pointer shrink-0
+                      ${theme === 'dark'
+                        ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
+                  >
+                    <Link size={14} />
+                    {t(language, 'settings.connect')}
+                  </button>
+                </div>
+              </div>
+            ) : googleConnected ? (
+              <div className={`mt-4 rounded-2xl p-3 flex items-center gap-3 ${theme === 'dark' ? 'bg-white/[0.04] border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
+                <span className="w-8 h-8 rounded-xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
+                  <Check size={15} />
+                </span>
+                <div className="min-w-0">
+                  <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                    {t(language, 'settings.googleConnected')}
+                  </p>
+                  <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                    {t(language, 'settings.googleConnectedHelp')}
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
 

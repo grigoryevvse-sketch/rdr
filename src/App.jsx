@@ -25,6 +25,8 @@ function AppContent() {
     isConfigured: isAuthConfigured,
     signInWithGoogle,
     signInWithTelegram,
+    connectGoogleAccount,
+    completeTelegramGoogleLink,
     signOut,
   } = useAuth()
   const [demoMode, setDemoMode] = useState(false)
@@ -68,6 +70,21 @@ function AppContent() {
     window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`)
     signInWithGoogle({ forceOAuth: true })
   }, [authLoading, inTelegramWebView, isLoggedIn, signInWithGoogle])
+
+  useEffect(() => {
+    if (authLoading || inTelegramWebView) return
+
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('telegram_google_link') !== '1') return
+
+    const tokenHash = url.searchParams.get('telegram_token_hash') || ''
+    const verificationType = url.searchParams.get('telegram_verification_type') || 'magiclink'
+    url.searchParams.delete('telegram_google_link')
+    url.searchParams.delete('telegram_token_hash')
+    url.searchParams.delete('telegram_verification_type')
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`)
+    completeTelegramGoogleLink({ tokenHash, verificationType })
+  }, [authLoading, completeTelegramGoogleLink, inTelegramWebView])
 
   useEffect(() => {
     notificationSettingsRef.current = notificationSettings
@@ -255,6 +272,7 @@ function AppContent() {
           <SettingsTab
             user={effectiveUser}
             onSignOut={handleSignOut}
+            onConnectGoogle={connectGoogleAccount}
             notificationControls={notificationControls}
           />
         )

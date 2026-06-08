@@ -51,18 +51,32 @@ function getExternalGoogleAuthUrl() {
   return url.toString()
 }
 
-function openExternalGoogleAuth() {
-  const authUrl = getExternalGoogleAuthUrl()
-
+function openExternalUrl(url) {
   if (window.Telegram?.WebApp?.openLink) {
-    window.Telegram.WebApp.openLink(authUrl, { try_instant_view: false })
+    window.Telegram.WebApp.openLink(url, { try_instant_view: false })
     return
   }
 
-  const opened = window.open(authUrl, '_blank', 'noopener,noreferrer')
+  const opened = window.open(url, '_blank', 'noopener,noreferrer')
   if (!opened) {
-    window.location.href = authUrl
+    window.location.href = url
   }
+}
+
+function openExternalGoogleAuth() {
+  openExternalUrl(getExternalGoogleAuthUrl())
+}
+
+function getTelegramGoogleLinkUrl(tokenHash, verificationType) {
+  const url = new URL(window.location.href)
+  url.searchParams.set('telegram_google_link', '1')
+  url.searchParams.set('telegram_token_hash', tokenHash)
+  url.searchParams.set('telegram_verification_type', verificationType || 'magiclink')
+  url.searchParams.delete('code')
+  url.searchParams.delete('error')
+  url.searchParams.delete('error_description')
+  url.hash = ''
+  return url.toString()
 }
 
 /**
@@ -205,6 +219,103 @@ export function useAuth() {
     }
   }, [])
 
+  const linkGoogleIdentity = useCallback(async () => {
+    setError('')
+
+    if (!supabase) {
+      const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
+      setError(message)
+      return { error: new Error(message) }
+    }
+
+    const { error } = await supabase.auth.linkIdentity({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}${window.location.pathname}?google_linked=1`,
+      },
+    })
+
+    if (error) {
+      setError(error.message)
+      return { error }
+    }
+
+    return { error: null }
+  }, [])
+
+  const connectGoogleAccount = useCallback(async () => {
+    setError('')
+
+    if (!supabase) {
+      const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
+      setError(message)
+      return { error: new Error(message) }
+    }
+
+    if (!isTelegramWebView()) {
+      return linkGoogleIdentity()
+    }
+
+    const initData = window.Telegram?.WebApp?.initData || ''
+
+    if (!initData) {
+      const message = 'Telegram account linking is available only inside Telegram.'
+      setError(message)
+      return { error: new Error(message) }
+    }
+
+    try {
+      const response = await fetch('/api/telegram-auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData }),
+      })
+      const body = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(body?.error || 'Could not prepare Google connection.')
+      }
+
+      openExternalUrl(getTelegramGoogleLinkUrl(body.tokenHash, body.verificationType))
+      return { error: null }
+    } catch (error) {
+      setError(error.message || 'Could not prepare Google connection.')
+      return { error }
+    }
+  }, [linkGoogleIdentity])
+
+  const completeTelegramGoogleLink = useCallback(async ({ tokenHash, verificationType } = {}) => {
+    setError('')
+
+    if (!supabase) {
+      const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
+      setError(message)
+      return { error: new Error(message) }
+    }
+
+    if (!tokenHash) {
+      const message = 'Google connection token is missing.'
+      setError(message)
+      return { error: new Error(message) }
+    }
+
+    try {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: verificationType || 'magiclink',
+      })
+
+      if (verifyError) {
+        throw verifyError
+      }
+
+      return linkGoogleIdentity()
+    } catch (error) {
+      setError(error.message || 'Could not connect Google account.')
+      return { error }
+    }
+  }, [linkGoogleIdentity])
+
   const signOut = useCallback(async () => {
     if (!supabase) return
     setError('')
@@ -219,6 +330,8 @@ export function useAuth() {
     isConfigured: isSupabaseConfigured,
     signInWithGoogle,
     signInWithTelegram,
+    connectGoogleAccount,
+    completeTelegramGoogleLink,
     signOut,
   }
 }
