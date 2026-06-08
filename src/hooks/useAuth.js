@@ -30,7 +30,15 @@ export function isTelegramWebView() {
   if (typeof window === 'undefined') return false
 
   const userAgent = window.navigator?.userAgent || ''
-  return Boolean(window.Telegram?.WebApp || /Telegram/i.test(userAgent))
+  const search = window.location.search || ''
+  const hash = window.location.hash || ''
+  return Boolean(
+    window.Telegram?.WebApp?.initData ||
+    window.Telegram?.WebApp ||
+    search.includes('tgWebAppData=') ||
+    hash.includes('tgWebAppData=') ||
+    /Telegram/i.test(userAgent)
+  )
 }
 
 function getExternalGoogleAuthUrl() {
