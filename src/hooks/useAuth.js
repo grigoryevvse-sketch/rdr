@@ -75,6 +75,39 @@ function openExternalGoogleAuth() {
   openExternalUrl(getExternalGoogleAuthUrl())
 }
 
+async function redirectToGoogleIdentityLink(setError) {
+  if (!supabase) {
+    const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
+    setError(message)
+    return { error: new Error(message) }
+  }
+
+  const { data, error } = await supabase.auth.linkIdentity({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}${window.location.pathname}?google_linked=1`,
+      queryParams: {
+        prompt: 'select_account',
+      },
+      skipBrowserRedirect: true,
+    },
+  })
+
+  if (error) {
+    setError(error.message)
+    return { error }
+  }
+
+  if (!data?.url) {
+    const missingUrlError = new Error('Google connection URL was not returned by Supabase.')
+    setError(missingUrlError.message)
+    return { error: missingUrlError }
+  }
+
+  window.location.assign(data.url)
+  return { error: null }
+}
+
 function getTelegramGoogleLinkUrl(tokenHash, verificationType) {
   const url = new URL(`${window.location.origin}${window.location.pathname}`)
   url.searchParams.set('telegram_google_link', '1')
@@ -102,6 +135,44 @@ export function useAuth() {
     let isMounted = true
 
     async function loadSession() {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('telegram_google_link') === '1') {
+        const tokenHash = params.get('telegram_token_hash') || ''
+        const verificationType = params.get('telegram_verification_type') || 'magiclink'
+
+        params.delete('telegram_google_link')
+        params.delete('force_browser_flow')
+        params.delete('telegram_token_hash')
+        params.delete('telegram_verification_type')
+        const nextUrl = `${window.location.pathname}${params.toString() ? `?${params}` : ''}${window.location.hash}`
+        window.history.replaceState({}, document.title, nextUrl)
+
+        if (!tokenHash) {
+          setError('Google connection token is missing.')
+          setLoading(false)
+          return
+        }
+
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: verificationType || 'magiclink',
+        })
+
+        if (!isMounted) return
+
+        if (verifyError) {
+          setError(verifyError.message)
+          setLoading(false)
+          return
+        }
+
+        const { error: linkError } = await redirectToGoogleIdentityLink(setError)
+        if (linkError && isMounted) {
+          setLoading(false)
+        }
+        return
+      }
+
       const redirectError = getAuthRedirectError()
       if (redirectError) {
         setError(decodeURIComponent(redirectError.replace(/\+/g, ' ')))
@@ -227,37 +298,7 @@ export function useAuth() {
 
   const linkGoogleIdentity = useCallback(async () => {
     setError('')
-
-    if (!supabase) {
-      const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
-      setError(message)
-      return { error: new Error(message) }
-    }
-
-    const { data, error } = await supabase.auth.linkIdentity({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}${window.location.pathname}?google_linked=1`,
-        queryParams: {
-          prompt: 'select_account',
-        },
-        skipBrowserRedirect: true,
-      },
-    })
-
-    if (error) {
-      setError(error.message)
-      return { error }
-    }
-
-    if (!data?.url) {
-      const missingUrlError = new Error('Google connection URL was not returned by Supabase.')
-      setError(missingUrlError.message)
-      return { error: missingUrlError }
-    }
-
-    window.location.assign(data.url)
-    return { error: null }
+    return redirectToGoogleIdentityLink(setError)
   }, [])
 
   const connectGoogleAccount = useCallback(async () => {
