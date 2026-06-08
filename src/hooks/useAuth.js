@@ -75,6 +75,15 @@ function openExternalGoogleAuth() {
   openExternalUrl(getExternalGoogleAuthUrl())
 }
 
+function withTimeout(promise, timeoutMs, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error(message)), timeoutMs)
+    }),
+  ])
+}
+
 async function redirectToGoogleIdentityLink(setError) {
   if (!supabase) {
     const message = supabaseConfigError || 'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env, then restart the app.'
@@ -82,16 +91,20 @@ async function redirectToGoogleIdentityLink(setError) {
     return { error: new Error(message) }
   }
 
-  const { data, error } = await supabase.auth.linkIdentity({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}${window.location.pathname}?google_linked=1`,
-      queryParams: {
-        prompt: 'select_account',
+  const { data, error } = await withTimeout(
+    supabase.auth.linkIdentity({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}${window.location.pathname}?google_linked=1`,
+        queryParams: {
+          prompt: 'select_account',
+        },
+        skipBrowserRedirect: true,
       },
-      skipBrowserRedirect: true,
-    },
-  })
+    }),
+    10_000,
+    'Google connection timed out. Try again.'
+  )
 
   if (error) {
     setError(error.message)
@@ -104,7 +117,7 @@ async function redirectToGoogleIdentityLink(setError) {
     return { error: missingUrlError }
   }
 
-  window.location.assign(data.url)
+  window.location.href = data.url
   return { error: null }
 }
 
@@ -153,10 +166,14 @@ export function useAuth() {
           return
         }
 
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: verificationType || 'magiclink',
-        })
+        const { data: verifyData, error: verifyError } = await withTimeout(
+          supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: verificationType || 'magiclink',
+          }),
+          10_000,
+          'Telegram connection timed out. Try again.'
+        )
 
         if (!isMounted) return
 
@@ -166,10 +183,33 @@ export function useAuth() {
           return
         }
 
+        if (verifyData?.session?.access_token && verifyData?.session?.refresh_token) {
+          const { error: setSessionError } = await withTimeout(
+            supabase.auth.setSession({
+              access_token: verifyData.session.access_token,
+              refresh_token: verifyData.session.refresh_token,
+            }),
+            10_000,
+            'Could not save the Telegram session. Try again.'
+          )
+
+          if (!isMounted) return
+
+          if (setSessionError) {
+            setError(setSessionError.message)
+            setLoading(false)
+            return
+          }
+        }
+
         const { error: linkError } = await redirectToGoogleIdentityLink(setError)
         if (linkError && isMounted) {
           setLoading(false)
+          return
         }
+        window.setTimeout(() => {
+          if (isMounted) setLoading(false)
+        }, 1500)
         return
       }
 
