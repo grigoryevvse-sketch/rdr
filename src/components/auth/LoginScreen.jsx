@@ -1,9 +1,10 @@
-import { Send } from 'lucide-react'
+import { Loader2, Send } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { t } from '../../utils/i18n'
 
-export default function LoginScreen({ onSignIn, authError, isAuthConfigured, inTelegramWebView = false }) {
+export default function LoginScreen({ onSignIn, authError, isAuthConfigured, inTelegramWebView = false, authAction = '' }) {
   const { language } = useApp()
+  const isConnectingGoogle = authAction === 'google-link'
 
   return (
     <div className="app-viewport flex items-center justify-center bg-[#0d0d14] relative overflow-hidden">
@@ -26,14 +27,16 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured, inT
         {/* Primary sign-in button */}
         <button
           onClick={onSignIn}
-          disabled={!isAuthConfigured}
+          disabled={!isAuthConfigured || isConnectingGoogle}
           className="flex items-center gap-3 mx-auto px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-sm
                      border border-white/10 text-white font-medium text-base
                      hover:bg-white/15 hover:border-white/20 active:scale-95
                      transition-all duration-200 cursor-pointer
                      disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white/10 disabled:active:scale-100"
         >
-          {inTelegramWebView ? (
+          {isConnectingGoogle ? (
+            <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin text-accent" />
+          ) : inTelegramWebView ? (
             <Send className="w-5 h-5 flex-shrink-0 text-[#2AABEE]" />
           ) : (
             <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
@@ -55,7 +58,11 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured, inT
               />
             </svg>
           )}
-          {inTelegramWebView ? t(language, 'login.telegram') : t(language, 'login.google')}
+          {isConnectingGoogle
+            ? t(language, 'login.connectingGoogle')
+            : inTelegramWebView
+              ? t(language, 'login.telegram')
+              : t(language, 'login.google')}
         </button>
 
         {inTelegramWebView && isAuthConfigured ? (

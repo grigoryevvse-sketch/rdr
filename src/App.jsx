@@ -31,6 +31,7 @@ function AppContent() {
   } = useAuth()
   const [demoMode, setDemoMode] = useState(false)
   const [calendarFocusDate, setCalendarFocusDate] = useState(null)
+  const [authAction, setAuthAction] = useState('')
 
   // Allow demo mode (no sign-in needed)
   const effectiveUser = useMemo(() => {
@@ -80,10 +81,14 @@ function AppContent() {
     const tokenHash = url.searchParams.get('telegram_token_hash') || ''
     const verificationType = url.searchParams.get('telegram_verification_type') || 'magiclink'
     url.searchParams.delete('telegram_google_link')
+    url.searchParams.delete('force_browser_flow')
     url.searchParams.delete('telegram_token_hash')
     url.searchParams.delete('telegram_verification_type')
     window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`)
-    completeTelegramGoogleLink({ tokenHash, verificationType })
+    window.setTimeout(() => setAuthAction('google-link'), 0)
+    completeTelegramGoogleLink({ tokenHash, verificationType }).finally(() => {
+      setAuthAction('')
+    })
   }, [authLoading, completeTelegramGoogleLink, inTelegramWebView])
 
   useEffect(() => {
@@ -219,6 +224,7 @@ function AppContent() {
         authError={authError}
         isAuthConfigured={isAuthConfigured}
         inTelegramWebView={inTelegramWebView}
+        authAction={authAction}
       />
     )
   }

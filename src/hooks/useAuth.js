@@ -29,6 +29,9 @@ function cleanAuthRedirectUrl() {
 export function isTelegramWebView() {
   if (typeof window === 'undefined') return false
 
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('force_browser_flow') === '1') return false
+
   const userAgent = window.navigator?.userAgent || ''
   const search = window.location.search || ''
   const hash = window.location.hash || ''
@@ -42,11 +45,17 @@ export function isTelegramWebView() {
 }
 
 function getExternalGoogleAuthUrl() {
-  const url = new URL(window.location.href)
+  const url = new URL(`${window.location.origin}${window.location.pathname}`)
+  url.search = window.location.search
   url.searchParams.set('external_google_auth', '1')
+  url.searchParams.set('force_browser_flow', '1')
   url.searchParams.delete('code')
   url.searchParams.delete('error')
   url.searchParams.delete('error_description')
+  url.searchParams.delete('tgWebAppData')
+  url.searchParams.delete('tgWebAppVersion')
+  url.searchParams.delete('tgWebAppPlatform')
+  url.searchParams.delete('tgWebAppThemeParams')
   url.hash = ''
   return url.toString()
 }
@@ -68,13 +77,11 @@ function openExternalGoogleAuth() {
 }
 
 function getTelegramGoogleLinkUrl(tokenHash, verificationType) {
-  const url = new URL(window.location.href)
+  const url = new URL(`${window.location.origin}${window.location.pathname}`)
   url.searchParams.set('telegram_google_link', '1')
+  url.searchParams.set('force_browser_flow', '1')
   url.searchParams.set('telegram_token_hash', tokenHash)
   url.searchParams.set('telegram_verification_type', verificationType || 'magiclink')
-  url.searchParams.delete('code')
-  url.searchParams.delete('error')
-  url.searchParams.delete('error_description')
   url.hash = ''
   return url.toString()
 }
