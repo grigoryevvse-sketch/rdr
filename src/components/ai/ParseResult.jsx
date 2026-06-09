@@ -1,4 +1,4 @@
-import { CalendarDays, Inbox, Check, X, Clock, AlignLeft, Bell, Repeat, Trash2 } from 'lucide-react'
+import { CalendarDays, Inbox, Check, X, Clock, AlignLeft, Bell, Repeat, Trash2, Pencil } from 'lucide-react'
 import { format, parseISO, isValid, isToday, isTomorrow } from 'date-fns'
 import { formatTime12h } from '../../utils/dateUtils'
 import { useApp } from '../../context/AppContext'
@@ -97,7 +97,7 @@ function ResultFields({ result, compact = false }) {
   )
 }
 
-export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem }) {
+export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem, onEditItem }) {
   const { theme, language } = useApp()
   const items = result.intent === 'batch' && Array.isArray(result.items)
     ? result.items
@@ -109,12 +109,26 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
     <div className={`rounded-2xl p-5 animate-scale-in
       ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200 shadow-sm'}`}>
       {/* Intent badge */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center justify-between gap-2 mb-4">
         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
           ${isSchedule ? 'bg-accent/15 text-accent' : 'bg-blue-500/15 text-blue-400'}`}>
           {isSchedule ? <CalendarDays size={12} /> : <Inbox size={12} />}
           {isBatch ? t(language, 'ai.plannedItems', items.length) : (isSchedule ? t(language, 'ai.schedule') : t(language, 'ai.addToInbox'))}
         </div>
+        {isSchedule && (
+          <button
+            type="button"
+            onClick={() => onEditItem?.(0)}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer
+              ${theme === 'dark'
+                ? 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900'}`}
+            title={t(language, 'ai.editSuggestion')}
+            aria-label={t(language, 'ai.editSuggestion')}
+          >
+            <Pencil size={15} />
+          </button>
+        )}
       </div>
 
       {/* Parsed fields */}
@@ -139,6 +153,20 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
               >
                 <Trash2 size={16} />
               </button>
+              {item.intent === 'schedule' && (
+                <button
+                  type="button"
+                  onClick={() => onEditItem?.(index)}
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer
+                    ${theme === 'dark'
+                      ? 'text-gray-500 hover:bg-white/10 hover:text-white'
+                      : 'text-gray-400 hover:bg-white hover:text-gray-900'}`}
+                  title={t(language, 'ai.editSuggestion')}
+                  aria-label={t(language, 'ai.editSuggestion')}
+                >
+                  <Pencil size={16} />
+                </button>
+              )}
             </div>
           ))}
         </div>

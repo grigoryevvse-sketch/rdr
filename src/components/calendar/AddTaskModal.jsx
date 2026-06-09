@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bell, Clock3, List, Plus, Repeat2, Trash2, X } from 'lucide-react'
+import { Bell, Check, Clock3, List, Plus, Repeat2, Trash2, X } from 'lucide-react'
 import { DEFAULT_NOTIFICATION_MOMENTS, NOTIFICATION_MOMENTS, TASK_ICONS } from '../../utils/constants'
 import { REPEAT_FREQUENCIES } from '../../utils/repeatUtils'
 import {
@@ -275,9 +275,19 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
           <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
             {mode === 'edit' ? t(language, 'calendar.editTask') : t(language, 'calendar.newTask')}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/10 transition cursor-pointer">
-            <X size={18} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              aria-label={mode === 'edit' ? t(language, 'calendar.saveTask') : t(language, 'calendar.addTask')}
+              className="md:hidden w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center hover:opacity-90 active:scale-95 transition cursor-pointer"
+            >
+              <Check size={18} />
+            </button>
+            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/10 transition cursor-pointer">
+              <X size={18} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

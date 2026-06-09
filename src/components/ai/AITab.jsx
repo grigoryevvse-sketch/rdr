@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sparkles } from 'lucide-react'
+import AddTaskModal from '../calendar/AddTaskModal'
 import PromptInput from './PromptInput'
 import ParseResult from './ParseResult'
 import { parseTaskInput } from './mockParser'
@@ -8,6 +9,7 @@ import { t } from '../../utils/i18n'
 
 export default function AITab({ onAddScheduled, onAddInbox }) {
   const [result, setResult] = useState(null)
+  const [editingSuggestionIndex, setEditingSuggestionIndex] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const { accentColor, theme, language, setTab } = useApp()
 
@@ -28,6 +30,45 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
 
     const remainingItems = result.items.filter((_, index) => index !== indexToRemove)
     setResult(remainingItems.length > 0 ? { ...result, items: remainingItems } : null)
+  }
+
+  function getResultItems() {
+    if (!result) return []
+    return result.intent === 'batch' && Array.isArray(result.items)
+      ? result.items
+      : [result]
+  }
+
+  function getEditingSuggestion() {
+    if (editingSuggestionIndex === null) return null
+    return getResultItems()[editingSuggestionIndex] || null
+  }
+
+  function updateSuggestion(indexToUpdate, updates) {
+    if (!result) return
+
+    const applyUpdates = (item) => ({
+      ...item,
+      intent: 'schedule',
+      title: updates.title,
+      date: updates.date,
+      time: updates.start_time,
+      duration: updates.duration,
+      repeat_frequency: updates.repeat_frequency || 'none',
+      notification_moments: updates.notification_moments,
+    })
+
+    if (result.intent === 'batch' && Array.isArray(result.items)) {
+      setResult({
+        ...result,
+        items: result.items.map((item, index) => (
+          index === indexToUpdate ? applyUpdates(item) : item
+        )),
+      })
+      return
+    }
+
+    setResult(applyUpdates(result))
   }
 
   function handleConfirm() {
@@ -117,9 +158,28 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
             onConfirm={handleConfirm}
             onDismiss={() => setResult(null)}
             onRemoveItem={handleRemoveResultItem}
+            onEditItem={setEditingSuggestionIndex}
           />
         )}
       </div>
+
+      {getEditingSuggestion()?.intent === 'schedule' && (
+        <AddTaskModal
+          mode="edit"
+          showDateField
+          initialTask={{
+            ...getEditingSuggestion(),
+            start_time: getEditingSuggestion().time || '09:00',
+            repeat_interval: 1,
+          }}
+          selectedDate={getEditingSuggestion().date}
+          onClose={() => setEditingSuggestionIndex(null)}
+          onAdd={(updates) => {
+            updateSuggestion(editingSuggestionIndex, updates)
+            setEditingSuggestionIndex(null)
+          }}
+        />
+      )}
     </div>
   )
 }

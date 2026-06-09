@@ -107,6 +107,7 @@ export const UI_TEXT = {
       plannedItems: (count) => `${count} planned items`,
       schedule: 'Schedule',
       addToInbox: 'Add to Inbox',
+      editSuggestion: 'Edit suggested event',
       removeSuggestion: 'Remove suggested event',
     },
     settings: {
@@ -248,6 +249,7 @@ export const UI_TEXT = {
       plannedItems: (count) => `${count} ${pluralRu(count, 'запланированный пункт', 'запланированных пункта', 'запланированных пунктов')}`,
       schedule: 'Запланировать',
       addToInbox: 'Добавить в инбокс',
+      editSuggestion: 'Редактировать предложенное событие',
       removeSuggestion: 'Удалить предложенное событие',
     },
     settings: {
