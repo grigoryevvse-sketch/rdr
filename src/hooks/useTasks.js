@@ -86,6 +86,8 @@ function normalizeScheduledTask(task) {
     notification_moments: Array.isArray(safeTask.notification_moments)
       ? safeTask.notification_moments
       : undefined,
+    shared_by_email: safeTask.shared_by_email || undefined,
+    shared_by_name: safeTask.shared_by_name || undefined,
   }
 }
 
@@ -410,6 +412,21 @@ export function useTasks(user) {
     }
   }, [ownerId, canUseSupabase, isDemoUser, reportSupabaseError])
 
+  const shareScheduledTask = useCallback(async (taskId, recipientIdentifier) => {
+    if (!canUseSupabase) {
+      throw new Error('Supabase sync is not ready.')
+    }
+    const { data, error: rpcError } = await supabase.rpc('share_task_to_user', {
+      p_task_id: taskId,
+      p_recipient_identifier: recipientIdentifier,
+    })
+    if (rpcError) throw rpcError
+    if (data && !data.success) {
+      throw new Error(data.error || 'Failed to share task')
+    }
+    return data
+  }, [canUseSupabase])
+
   return {
     scheduledTasks,
     inboxTasks,
@@ -422,5 +439,6 @@ export function useTasks(user) {
     toggleInboxTask,
     deleteInboxTask,
     scheduleInboxTask,
+    shareScheduledTask,
   }
 }

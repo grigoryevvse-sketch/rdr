@@ -3,6 +3,7 @@ import { CheckCircle2, Circle, Repeat2, Trash2 } from 'lucide-react'
 import * as LucideIcons from 'lucide-react'
 import { addDays, formatDateISO, formatTime12h, getEndTime, parseISO, timeToPixels } from '../../utils/dateUtils'
 import { getRepeatLabel, isRepeatingTask } from '../../utils/repeatUtils'
+import { useApp } from '../../context/AppContext'
 
 const DAY_DRAG_WIDTH = 96
 const MINUTES_PER_STEP = 15
@@ -21,6 +22,7 @@ function timeToMinutes(time) {
 }
 
 export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineStartOffset = 0, onUpdate, onEdit, onDelete }) {
+  const { language } = useApp()
   const [dragPreview, setDragPreview] = useState(null)
   const dragRef = useRef(null)
 
@@ -168,6 +170,11 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
           <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-white/70">
             <Repeat2 size={11} />
             <span className="truncate">{repeatLabel}</span>
+          </p>
+        )}
+        {task.shared_by_name && height >= 60 && (
+          <p className="text-[10px] mt-0.5 opacity-80 text-white truncate font-medium">
+            {language === 'ru' ? `От: ${task.shared_by_name}` : `From: ${task.shared_by_name}`}
           </p>
         )}
       </div>

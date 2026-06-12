@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Bell, BellOff, BellRing, Check, Languages, Link, Loader2, LogOut, Monitor, Palette, Plus, Send, Smartphone, Trash2, User } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import AccentPicker from './AccentPicker'
 import { useApp } from '../../context/AppContext'
+import { supabase } from '../../supabase'
 import { DEFAULT_NOTIFICATION_MOMENTS, NOTIFICATION_MOMENTS } from '../../utils/constants'
 import { sendTelegramReminder } from '../../utils/telegramUtils'
 import {
@@ -44,6 +45,63 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
   const [googleConnectError, setGoogleConnectError] = useState('')
   const [newCustomReminderValue, setNewCustomReminderValue] = useState(30)
   const [newCustomReminderUnit, setNewCustomReminderUnit] = useState('minutes')
+  
+  // Custom username handle state
+  const [usernameInput, setUsernameInput] = useState(notificationSettings.username || '')
+  const [usernameSaving, setUsernameSaving] = useState(false)
+  const [usernameError, setUsernameError] = useState('')
+  const [usernameSuccess, setUsernameSuccess] = useState(false)
+
+  const isDemo = !user || user.id === 'demo'
+
+  useEffect(() => {
+    if (notificationSettings.username !== undefined) {
+      setUsernameInput(notificationSettings.username || '')
+    }
+  }, [notificationSettings.username])
+
+  async function saveUsername() {
+    const nextUsername = usernameInput.trim().toLowerCase().replace(/^@/, '')
+    
+    if (!nextUsername) {
+      setUsernameError(language === 'ru' ? 'Имя пользователя не может быть пустым' : 'Username cannot be empty')
+      return
+    }
+
+    if (nextUsername.length < 3) {
+      setUsernameError(language === 'ru' ? 'Минимум 3 символа' : 'Minimum 3 characters')
+      return
+    }
+
+    setUsernameSaving(true)
+    setUsernameError('')
+    setUsernameSuccess(false)
+
+    try {
+      const { error: upsertError } = await supabase
+        .from('notification_settings')
+        .upsert({
+          user_id: user?.task_owner_id || user?.id,
+          username: nextUsername,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' })
+
+      if (upsertError) {
+        if (upsertError.code === '23505') {
+          throw new Error(language === 'ru' ? 'Это имя пользователя уже занято' : 'This username is already taken')
+        }
+        throw upsertError
+      }
+
+      setNotificationSettings({ username: nextUsername })
+      setUsernameSuccess(true)
+      setTimeout(() => setUsernameSuccess(false), 3000)
+    } catch (err) {
+      setUsernameError(err.message || (language === 'ru' ? 'Не удалось сохранить имя пользователя' : 'Failed to save username'))
+    } finally {
+      setUsernameSaving(false)
+    }
+  }
   const defaultMoments = notificationSettings.defaultMoments || DEFAULT_NOTIFICATION_MOMENTS
   const customReminderMinutes = getCustomNotificationMinutesList(defaultMoments)
   const notificationsOn = notificationSettings.enabled && permission === 'granted'
@@ -212,6 +270,59 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                 {t(language, 'settings.signOut')}
               </button>
             </div>
+
+            {/* Custom username setting */}
+            {!isDemo && (
+              <div className={`mt-4 pt-4 border-t ${theme === 'dark' ? 'border-white/5' : 'border-gray-100'}`}>
+                <label className={`text-xs font-medium mb-1.5 block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {language === 'ru' ? 'Уникальное имя пользователя (для обмена задачами)' : 'Unique username handle (for sharing tasks)'}
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      value={usernameInput}
+                      onChange={(e) => {
+                        setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))
+                        setUsernameError('')
+                        setUsernameSuccess(false)
+                      }}
+                      placeholder="username"
+                      className={`w-full pl-7 pr-3 py-2 rounded-xl text-sm outline-none
+                        ${theme === 'dark'
+                          ? 'bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:border-accent'
+                          : 'bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-accent'}`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={saveUsername}
+                    disabled={usernameSaving || usernameInput.trim().toLowerCase().replace(/^@/, '') === (notificationSettings.username || '')}
+                    className="px-4 rounded-xl bg-accent text-white text-xs font-semibold hover:opacity-90 active:scale-95 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[80px]"
+                  >
+                    {usernameSaving ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      language === 'ru' ? 'Сохранить' : 'Save'
+                    )}
+                  </button>
+                </div>
+                {usernameError && (
+                  <p className="mt-1.5 text-xs text-red-400 leading-relaxed">
+                    {usernameError}
+                  </p>
+                )}
+                {usernameSuccess && (
+                  <p className="mt-1.5 text-xs text-accent leading-relaxed">
+                    {language === 'ru' ? 'Имя пользователя успешно обновлено!' : 'Username successfully updated!'}
+                  </p>
+                )}
+              </div>
+            )}
+
             {showGoogleConnect ? (
               <div className={`mt-4 rounded-2xl p-3 ${theme === 'dark' ? 'bg-white/[0.04] border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
                 <div className="flex items-start justify-between gap-3">

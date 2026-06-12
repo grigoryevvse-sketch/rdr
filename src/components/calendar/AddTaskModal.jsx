@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bell, Check, Clock3, List, Plus, Repeat2, Trash2, X } from 'lucide-react'
+import { Bell, Check, Clock3, List, Plus, Repeat2, Trash2, X, ChevronRight, Send, Loader2 } from 'lucide-react'
 import { DEFAULT_NOTIFICATION_MOMENTS, NOTIFICATION_MOMENTS, TASK_ICONS } from '../../utils/constants'
 import { REPEAT_FREQUENCIES } from '../../utils/repeatUtils'
 import {
@@ -85,7 +85,7 @@ function formatDurationLabel(minutes, language = 'en') {
   return `${Math.floor(minutes / 60)} hr ${minutes % 60} min`
 }
 
-export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask, mode = 'add', showDateField = false }) {
+export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask, mode = 'add', showDateField = false, onShare }) {
   const { accentColor, theme, language, notificationSettings } = useApp()
   const initialStartTime = normalizeTimeInput(initialTask?.start_time || '09:00')
   const [title, setTitle] = useState(initialTask?.title || '')
@@ -115,6 +115,12 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   )
   const [newCustomReminderValue, setNewCustomReminderValue] = useState(30)
   const [newCustomReminderUnit, setNewCustomReminderUnit] = useState('minutes')
+
+  // Sharing states
+  const [showSharePanel, setShowSharePanel] = useState(false)
+  const [recipientInput, setRecipientInput] = useState('')
+  const [shareLoading, setShareLoading] = useState(false)
+  const [shareStatus, setShareStatus] = useState(null)
   const customReminderMinutes = getCustomNotificationMinutesList(notificationMoments)
   const selectedTimeRef = useRef(null)
   const dateInputRef = useRef(null)
@@ -132,6 +138,29 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   const panelClass = theme === 'dark'
     ? 'bg-white/[0.04] border border-white/10'
     : 'bg-gray-50 border border-gray-200'
+
+  async function handleShare() {
+    if (!recipientInput.trim() || !onShare) return
+    setShareLoading(true)
+    setShareStatus(null)
+    try {
+      const res = await onShare(initialTask.id, recipientInput.trim())
+      setShareLoading(false)
+      setShareStatus({
+        success: true,
+        message: language === 'ru'
+          ? `Задача успешно отправлена пользователю ${res.recipient_email || recipientInput}`
+          : `Task shared successfully with ${res.recipient_email || recipientInput}!`,
+      })
+      setRecipientInput('')
+    } catch (err) {
+      setShareLoading(false)
+      setShareStatus({
+        success: false,
+        message: err.message || (language === 'ru' ? 'Не удалось отправить задачу.' : 'Failed to share task.'),
+      })
+    }
+  }
 
   useEffect(() => {
     if (isSyncingFromScrollRef.current) {
@@ -691,6 +720,64 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
               </div>
             </div>
           </div>
+
+          {/* Share Task Section */}
+          {mode === 'edit' && onShare && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowSharePanel(!showSharePanel)}
+                className={`w-full rounded-xl px-3 py-2.5 text-sm font-semibold text-left transition cursor-pointer flex items-center justify-between
+                  ${showSharePanel
+                    ? 'bg-accent/15 text-accent border border-accent/40'
+                    : theme === 'dark'
+                      ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                      : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Send size={14} />
+                  <span>{language === 'ru' ? 'Поделиться задачей' : 'Share Task'}</span>
+                </div>
+                <ChevronRight size={14} className={`transition-transform duration-200 ${showSharePanel ? 'rotate-90' : ''}`} />
+              </button>
+
+              {showSharePanel && (
+                <div className={`mt-2 rounded-2xl p-4 space-y-3 animate-fade-in ${panelClass}`}>
+                  <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {language === 'ru'
+                      ? 'Введите никнейм (@username), email или Telegram имя получателя.'
+                      : "Enter the recipient's username handle (@username), email, or Telegram username."}
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder={language === 'ru' ? 'например, @valeriya или email' : 'e.g. @valeriya or email'}
+                      value={recipientInput}
+                      onChange={(e) => setRecipientInput(e.target.value)}
+                      className={`flex-1 px-3 py-2.5 rounded-xl text-xs outline-none ${fieldClass}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      disabled={shareLoading || !recipientInput.trim()}
+                      className="px-4 rounded-xl bg-accent text-white text-xs font-semibold hover:opacity-90 active:scale-95 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[80px]"
+                    >
+                      {shareLoading ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        language === 'ru' ? 'Отправить' : 'Send'
+                      )}
+                    </button>
+                  </div>
+                  {shareStatus && (
+                    <p className={`text-xs font-medium ${shareStatus.success ? 'text-accent' : 'text-red-400'}`}>
+                      {shareStatus.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Submit */}
           <button

@@ -18,7 +18,7 @@ import { useApp } from '../../context/AppContext'
 import { format, addMonths, subMonths } from 'date-fns'
 import { DATE_LOCALES, t } from '../../utils/i18n'
 
-export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, onDeleteTask, initialDate }) {
+export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, onDeleteTask, onShareTask, initialDate }) {
   const [selectedDateStr, setSelectedDateStr] = useState(initialDate || formatDateISO(new Date()))
   const [currentMonth, setCurrentMonth] = useState(initialDate ? parseISO(initialDate) : new Date())
   const [isOverviewOpen, setIsOverviewOpen] = useState(false)
@@ -420,6 +420,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
             if (updates.date) selectDate(updates.date)
             setEditingTask(null)
           }}
+          onShare={onShareTask}
         />
       )}
     </div>

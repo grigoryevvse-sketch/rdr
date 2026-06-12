@@ -58,7 +58,7 @@ function getOverlapIds(tasks) {
   return overlapping
 }
 
-export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, onDeleteTask, initialDate }) {
+export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, onDeleteTask, onShareTask, initialDate }) {
   const [selectedDateStr, setSelectedDateStr] = useState(initialDate || formatDateISO(new Date()))
   const [showModal, setShowModal] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
@@ -205,6 +205,13 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                           <p className={`mt-1 text-base font-bold truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'} ${(isOverlapping || isCompleted) ? 'line-through decoration-2 decoration-current/50' : ''}`}>
                             {task.title}
                           </p>
+                          {task.shared_by_name && (
+                            <p className={`mt-1 flex items-center gap-1 text-xs font-semibold ${theme === 'dark' ? 'text-accent/80' : 'text-accent'}`}>
+                              <span className="truncate">
+                                {language === 'ru' ? `От: ${task.shared_by_name}` : `From: ${task.shared_by_name}`}
+                              </span>
+                            </p>
+                          )}
                           {repeats && (
                             <p className={`mt-1 flex items-center gap-1 text-xs font-semibold ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
                               <Repeat2 size={12} />
@@ -278,6 +285,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
             handleUpdateTask(editingTask.id, updates)
             setEditingTask(null)
           }}
+          onShare={onShareTask}
         />
       )}
     </div>

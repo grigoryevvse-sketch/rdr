@@ -84,7 +84,7 @@ function AppContent() {
     async function loadNotificationSettings() {
       const { data } = await supabase
         .from('notification_settings')
-        .select('browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone,language')
+        .select('browser_enabled,telegram_enabled,telegram_chat_id,default_moments,time_zone,language,username')
         .eq('user_id', userId)
         .maybeSingle()
 
@@ -96,6 +96,7 @@ function AppContent() {
           enabled: Boolean(data.browser_enabled),
           telegramEnabled: Boolean(data.telegram_enabled),
           telegramChatId: data.telegram_chat_id || '',
+          username: data.username || '',
         }
 
         if (Array.isArray(data.default_moments)) {
@@ -147,6 +148,7 @@ function AppContent() {
             default_moments: notificationSettings.defaultMoments,
             language,
             time_zone: timeZone,
+            username: notificationSettings.username || null,
             updated_at: new Date().toISOString(),
           }, { onConflict: 'user_id' })
 
@@ -219,6 +221,7 @@ function AppContent() {
             onAddTask={addScheduledTask}
             onUpdateTask={updateScheduledTask}
             onDeleteTask={deleteScheduledTask}
+            onShareTask={effectiveUser?.id === 'demo' ? null : shareScheduledTask}
             initialDate={calendarFocusDate}
           />
         )
@@ -229,6 +232,7 @@ function AppContent() {
             onAddTask={addScheduledTask}
             onUpdateTask={updateScheduledTask}
             onDeleteTask={deleteScheduledTask}
+            onShareTask={effectiveUser?.id === 'demo' ? null : shareScheduledTask}
             initialDate={calendarFocusDate}
           />
         )
