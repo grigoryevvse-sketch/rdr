@@ -43,6 +43,7 @@ function AppContent() {
     scheduledTasks, inboxTasks, loading: tasksLoading, error: tasksError,
     addScheduledTask, updateScheduledTask, deleteScheduledTask,
     addInboxTask, toggleInboxTask, deleteInboxTask, scheduleInboxTask,
+    shareScheduledTask,
   } = useTasks(effectiveUser)
 
   const { activeTab, theme, language, notificationSettings, setTab, setLanguage, setNotificationSettings } = useApp()
