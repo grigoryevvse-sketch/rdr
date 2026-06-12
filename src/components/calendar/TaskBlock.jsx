@@ -21,7 +21,7 @@ function timeToMinutes(time) {
   return h * 60 + m
 }
 
-export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineStartOffset = 0, onUpdate, onEdit, onDelete }) {
+export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineStartOffset = 0, onUpdate, onEdit, onDelete, currentUserId }) {
   const { language } = useApp()
   const [dragPreview, setDragPreview] = useState(null)
   const dragRef = useRef(null)
@@ -172,7 +172,7 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
             <span className="truncate">{repeatLabel}</span>
           </p>
         )}
-        {task.shared_by_name && height >= 60 && (
+        {task.shared_by_name && task.user_id !== currentUserId && height >= 60 && (
           <p className="text-[10px] mt-0.5 opacity-80 text-white truncate font-medium">
             {language === 'ru' ? `От: ${task.shared_by_name}` : `From: ${task.shared_by_name}`}
           </p>

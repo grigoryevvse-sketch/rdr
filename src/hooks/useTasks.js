@@ -88,13 +88,18 @@ function normalizeScheduledTask(task) {
       : undefined,
     shared_by_email: safeTask.shared_by_email || undefined,
     shared_by_name: safeTask.shared_by_name || undefined,
+    user_id: safeTask.user_id || undefined,
+    shared_with_users: Array.isArray(safeTask.shared_with_users) ? safeTask.shared_with_users : [],
   }
 }
 
 async function insertScheduledTask(task, userId) {
+  const taskToInsert = normalizeScheduledTask(task)
+  if (!taskToInsert.user_id) taskToInsert.user_id = userId
+  
   const { error } = await supabase
     .from('scheduled_tasks')
-    .insert({ ...normalizeScheduledTask(task), user_id: userId })
+    .insert(taskToInsert)
 
   if (error) throw error
   return true
@@ -204,7 +209,7 @@ export function useTasks(user) {
     try {
       await migrateLocalTasksToSupabase(ownerId)
       const [{ data: st }, { data: it }] = await Promise.all([
-        supabase.from('scheduled_tasks').select('*').eq('user_id', ownerId).order('start_time'),
+        supabase.from('scheduled_tasks').select('*').or(`user_id.eq.${ownerId},shared_with_users.cs.{${ownerId}}`).order('start_time'),
         supabase.from('inbox_tasks').select('*').eq('user_id', ownerId).order('created_at'),
       ])
       setScheduledTasks(mergeLocalNotificationMoments(st || []))
@@ -236,7 +241,7 @@ export function useTasks(user) {
       const scheduled = supabase
         .channel('scheduled-tasks')
         .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'scheduled_tasks', filter: `user_id=eq.${ownerId}` },
+          { event: '*', schema: 'public', table: 'scheduled_tasks' },
           () => loadFromSupabase()
         )
         .subscribe()
@@ -283,6 +288,7 @@ export function useTasks(user) {
     const newTask = normalizeScheduledTask({
       ...task,
       id: generateId(),
+      user_id: task.user_id || ownerId,
     })
     if (canUseSupabase) {
       try {

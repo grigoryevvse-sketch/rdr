@@ -1,7 +1,8 @@
 -- Add columns for sharing tasks
 alter table public.scheduled_tasks
   add column if not exists shared_by_email text,
-  add column if not exists shared_by_name text;
+  add column if not exists shared_by_name text,
+  add column if not exists shared_with_users uuid[] not null default array[]::uuid[];
 
 -- Add username column to notification_settings
 alter table public.notification_settings
@@ -16,6 +17,32 @@ begin
     alter table public.notification_settings add constraint notification_settings_username_key unique (username);
   end if;
 end $$;
+
+-- Update RLS for scheduled_tasks to support shared users
+drop policy if exists "Users can read their scheduled tasks" on public.scheduled_tasks;
+create policy "Users can read their scheduled tasks"
+  on public.scheduled_tasks
+  for select
+  using (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users));
+
+drop policy if exists "Users can update their scheduled tasks" on public.scheduled_tasks;
+create policy "Users can update their scheduled tasks"
+  on public.scheduled_tasks
+  for update
+  using (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users))
+  with check (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users));
+
+drop policy if exists "Users can delete their scheduled tasks" on public.scheduled_tasks;
+create policy "Users can delete their scheduled tasks"
+  on public.scheduled_tasks
+  for delete
+  using (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users));
+
+drop policy if exists "Users can insert their scheduled tasks" on public.scheduled_tasks;
+create policy "Users can insert their scheduled tasks"
+  on public.scheduled_tasks
+  for insert
+  with check (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users));
 
 -- Create share_task_to_user function
 create or replace function public.share_task_to_user(
@@ -33,7 +60,6 @@ declare
   v_recipient_id uuid;
   v_recipient_email text;
   v_task record;
-  v_new_task_id text;
   v_recipient_chat_id text;
   v_recipient_telegram_enabled boolean;
   v_recipient_language text;
@@ -52,10 +78,10 @@ begin
   from auth.users
   where id = v_sender_id;
 
-  -- Fetch the task to be shared
+  -- Fetch the task to be shared (must be owner or already shared with them)
   select * into v_task
   from public.scheduled_tasks
-  where id = p_task_id and (user_id = v_sender_id or public.can_access_owner(user_id));
+  where id = p_task_id and (public.can_access_owner(user_id) or v_sender_id = any(shared_with_users));
 
   if not found then
     return jsonb_build_object('success', false, 'error', 'Task not found or you do not have permission to share it');
@@ -114,45 +140,19 @@ begin
     return jsonb_build_object('success', false, 'error', 'Recipient user not found');
   end if;
 
-  if v_recipient_id = v_sender_id then
-    return jsonb_build_object('success', false, 'error', 'You cannot share a task with yourself');
+  if v_recipient_id = v_task.user_id or v_recipient_id = any(v_task.shared_with_users) then
+    return jsonb_build_object('success', false, 'error', 'Task is already shared with this user');
   end if;
 
-  -- Generate a random text ID for the new task
-  v_new_task_id := encode(gen_random_bytes(16), 'hex');
-
-  -- Insert copied task for recipient
-  insert into public.scheduled_tasks (
-    id,
-    user_id,
-    title,
-    date,
-    start_time,
-    duration,
-    color,
-    icon,
-    completed,
-    repeat_frequency,
-    repeat_interval,
-    notification_moments,
-    shared_by_email,
-    shared_by_name
-  ) values (
-    v_new_task_id,
-    v_recipient_id,
-    v_task.title,
-    v_task.date,
-    v_task.start_time,
-    v_task.duration,
-    v_task.color,
-    v_task.icon,
-    false, -- reset completed status
-    v_task.repeat_frequency,
-    v_task.repeat_interval,
-    v_task.notification_moments,
-    v_sender_email,
-    v_sender_name
-  );
+  -- Add recipient to the shared_with_users array.
+  -- Only update shared_by_name if the sender is the original owner.
+  -- This preserves the original sender's name if a shared task is shared again.
+  update public.scheduled_tasks
+  set 
+    shared_with_users = array(select distinct unnest(array_append(shared_with_users, v_recipient_id))),
+    shared_by_email = case when v_task.user_id = v_sender_id then v_sender_email else shared_by_email end,
+    shared_by_name = case when v_task.user_id = v_sender_id then v_sender_name else shared_by_name end
+  where id = p_task_id;
 
   -- Get recipient's notification preferences
   select telegram_chat_id, telegram_enabled, language 
@@ -162,7 +162,7 @@ begin
 
   return jsonb_build_object(
     'success', true, 
-    'new_task_id', v_new_task_id, 
+    'new_task_id', p_task_id, 
     'recipient_email', v_recipient_email,
     'sender_name', v_sender_name,
     'recipient_chat_id', case when v_recipient_telegram_enabled then v_recipient_chat_id else null end,

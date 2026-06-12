@@ -16,7 +16,7 @@ function minutesToTime(totalMinutes) {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 
-export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask, onDeleteTask, onCreateTaskAtTime }) {
+export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask, onDeleteTask, onCreateTaskAtTime, currentUserId }) {
   const containerRef = useRef(null)
   const didAutoScrollRef = useRef(false)
   const [nowPosition, setNowPosition] = useState(0)
@@ -94,6 +94,7 @@ export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask
               onUpdate={(updates) => onUpdateTask(task.id, updates)}
               onEdit={() => onEditTask(task)}
               onDelete={() => onDeleteTask(task.id)}
+              currentUserId={currentUserId}
             />
           )
         })}

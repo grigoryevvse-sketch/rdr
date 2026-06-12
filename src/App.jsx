@@ -224,6 +224,7 @@ function AppContent() {
             onDeleteTask={deleteScheduledTask}
             onShareTask={effectiveUser?.id === 'demo' ? null : shareScheduledTask}
             initialDate={calendarFocusDate}
+            currentUserId={effectiveUser?.id}
           />
         )
       case TABS.TIMELINE:
@@ -235,6 +236,7 @@ function AppContent() {
             onDeleteTask={deleteScheduledTask}
             onShareTask={effectiveUser?.id === 'demo' ? null : shareScheduledTask}
             initialDate={calendarFocusDate}
+            currentUserId={effectiveUser?.id}
           />
         )
       case TABS.INBOX:
