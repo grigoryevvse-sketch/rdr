@@ -34,6 +34,9 @@ declare
   v_recipient_email text;
   v_task record;
   v_new_task_id text;
+  v_recipient_chat_id text;
+  v_recipient_telegram_enabled boolean;
+  v_recipient_language text;
 begin
   -- Get the current authenticated user (sender)
   v_sender_id := auth.uid();
@@ -151,6 +154,19 @@ begin
     v_sender_name
   );
 
-  return jsonb_build_object('success', true, 'new_task_id', v_new_task_id, 'recipient_email', v_recipient_email);
+  -- Get recipient's notification preferences
+  select telegram_chat_id, telegram_enabled, language 
+  into v_recipient_chat_id, v_recipient_telegram_enabled, v_recipient_language
+  from public.notification_settings
+  where user_id = v_recipient_id;
+
+  return jsonb_build_object(
+    'success', true, 
+    'new_task_id', v_new_task_id, 
+    'recipient_email', v_recipient_email,
+    'sender_name', v_sender_name,
+    'recipient_chat_id', case when v_recipient_telegram_enabled then v_recipient_chat_id else null end,
+    'recipient_language', v_recipient_language
+  );
 end;
 $$;

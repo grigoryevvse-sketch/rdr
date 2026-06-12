@@ -15,6 +15,7 @@ import {
 import * as LucideIcons from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { t } from '../../utils/i18n'
+import { sendTelegramReminder } from '../../utils/telegramUtils'
 
 const DURATION_PRESETS = [15, 30, 45, 60, 90, 120]
 const TIME_STEP_MINUTES = 15
@@ -121,6 +122,14 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   const [recipientInput, setRecipientInput] = useState('')
   const [shareLoading, setShareLoading] = useState(false)
   const [shareStatus, setShareStatus] = useState(null)
+  const [recentShares, setRecentShares] = useState([])
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('planner-recent-shares') || '[]')
+      if (Array.isArray(saved)) setRecentShares(saved)
+    } catch {}
+  }, [])
   const customReminderMinutes = getCustomNotificationMinutesList(notificationMoments)
   const selectedTimeRef = useRef(null)
   const dateInputRef = useRef(null)
@@ -141,16 +150,34 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
 
   async function handleShare() {
     if (!recipientInput.trim() || !onShare) return
+    const targetRecipient = recipientInput.trim()
     setShareLoading(true)
     setShareStatus(null)
     try {
-      const res = await onShare(initialTask.id, recipientInput.trim())
+      const res = await onShare(initialTask.id, targetRecipient)
+      
+      // Save to recent shares
+      const savedShares = JSON.parse(localStorage.getItem('planner-recent-shares') || '[]')
+      const nextShares = [targetRecipient, ...savedShares.filter(s => s !== targetRecipient)].slice(0, 5)
+      localStorage.setItem('planner-recent-shares', JSON.stringify(nextShares))
+      setRecentShares(nextShares)
+
+      // Send Telegram notification if the recipient has Telegram enabled
+      if (res.recipient_chat_id) {
+        const dateFormatted = initialTask.date || selectedDate
+        const senderName = res.sender_name || 'Кто-то'
+        const telegramMessage = res.recipient_language === 'ru'
+          ? `🔔 Пользователь ${senderName} поделился с вами задачей:\n📍 *${initialTask.title}*\n📅 Дата: ${dateFormatted}\n⏰ Время: ${initialTask.start_time || '09:00'}`
+          : `🔔 User ${senderName} shared a task with you:\n📍 *${initialTask.title}*\n📅 Date: ${dateFormatted}\n⏰ Time: ${initialTask.start_time || '09:00'}`;
+        await sendTelegramReminder(telegramMessage, res.recipient_chat_id)
+      }
+
       setShareLoading(false)
       setShareStatus({
         success: true,
         message: language === 'ru'
-          ? `Задача успешно отправлена пользователю ${res.recipient_email || recipientInput}`
-          : `Task shared successfully with ${res.recipient_email || recipientInput}!`,
+          ? `Задача успешно отправлена пользователю ${res.recipient_email || targetRecipient}`
+          : `Task shared successfully with ${res.recipient_email || targetRecipient}!`,
       })
       setRecipientInput('')
     } catch (err) {
@@ -769,6 +796,30 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       )}
                     </button>
                   </div>
+                  {recentShares.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <p className={`text-[10px] font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                        {language === 'ru' ? 'Недавние получатели' : 'Recent recipients'}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {recentShares.map((share) => (
+                          <button
+                            key={share}
+                            type="button"
+                            onClick={() => setRecipientInput(share)}
+                            className={`px-2.5 py-1 rounded-full text-xs font-semibold transition cursor-pointer border
+                              ${recipientInput === share
+                                ? 'bg-accent/20 border-accent/40 text-accent'
+                                : theme === 'dark'
+                                  ? 'bg-white/5 border-white/5 text-gray-300 hover:bg-white/10'
+                                  : 'bg-gray-100 border-gray-200 text-gray-600 hover:bg-gray-200'}`}
+                          >
+                            {share}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {shareStatus && (
                     <p className={`text-xs font-medium ${shareStatus.success ? 'text-accent' : 'text-red-400'}`}>
                       {shareStatus.message}
