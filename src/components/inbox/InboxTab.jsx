@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format, isValid, differenceInCalendarDays } from 'date-fns'
-import { Inbox as InboxIcon, CheckCircle2, Cake } from 'lucide-react'
+import { Inbox as InboxIcon, CheckCircle2, Cake, Users } from 'lucide-react'
 import TaskInput from './TaskInput'
 import TaskItem from './TaskItem'
 import AddTaskModal from '../calendar/AddTaskModal'
@@ -43,6 +43,7 @@ function getScheduledDetail(task, language) {
 export default function InboxTab({
   inboxTasks,
   scheduledTasks = [],
+  currentUserId,
   onAddTask,
   onToggleTask,
   onDeleteTask,
@@ -77,6 +78,11 @@ export default function InboxTab({
   const allPending = allTasks.filter(t => !t.completed)
   const allCompleted = allTasks.filter(t => t.completed)
 
+  // Shared tasks
+  const sharedTasks = allTasks.filter(t => t.shared_by_name && t.user_id !== currentUserId)
+  const sharedPending = sharedTasks.filter(t => !t.completed)
+  const sharedCompleted = sharedTasks.filter(t => t.completed)
+
   // Birthday tasks: detect from scheduledTasks and compute next occurrence
   const todayStart = new Date()
   todayStart.setHours(0, 0, 0, 0)
@@ -95,13 +101,16 @@ export default function InboxTab({
 
   const showingAll = viewMode === 'all'
   const showingBirthdays = viewMode === 'birthdays'
-  const visiblePending = showingAll ? allPending : pending
-  const visibleCompleted = showingAll ? allCompleted : completed
+  const showingShared = viewMode === 'shared'
+
+  const visiblePending = showingAll ? allPending : showingShared ? sharedPending : pending
+  const visibleCompleted = showingAll ? allCompleted : showingShared ? sharedCompleted : completed
 
   const tabs = [
     { id: 'inbox', label: t(language, 'inbox.title'), count: inboxTasks.length },
     { id: 'all', label: t(language, 'inbox.all'), count: allTasks.length },
     { id: 'birthdays', label: t(language, 'inbox.birthdays'), count: birthdayTasks.length },
+    { id: 'shared', label: t(language, 'inbox.shared'), count: sharedTasks.length },
   ]
 
   return (
@@ -116,12 +125,14 @@ export default function InboxTab({
             <p className={`text-sm mt-0.5 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
               {showingBirthdays
                 ? t(language, 'inbox.birthdays')
-                : t(language, 'inbox.remaining', visiblePending.length)}
+                : showingShared
+                  ? t(language, 'inbox.shared')
+                  : t(language, 'inbox.remaining', visiblePending.length)}
             </p>
           </div>
 
-          {/* 3-way toggle */}
-          <div className={`grid grid-cols-3 rounded-xl border p-1 text-xs font-semibold
+          {/* 4-way toggle */}
+          <div className={`grid grid-cols-4 rounded-xl border p-1 text-xs font-semibold
             ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-gray-100 border-gray-200'}`}>
             {tabs.map((option) => (
               <button
@@ -137,7 +148,10 @@ export default function InboxTab({
                 {option.id === 'birthdays' && (
                   <Cake size={11} className="shrink-0" />
                 )}
-                <span>{option.label}</span>
+                {option.id === 'shared' && (
+                  <Users size={11} className="shrink-0" />
+                )}
+                <span className="truncate">{option.label}</span>
                 <span className={`${viewMode === option.id ? 'opacity-60' : 'opacity-40'}`}>{option.count}</span>
               </button>
             ))}
@@ -146,7 +160,7 @@ export default function InboxTab({
       </div>
 
       {/* Task input — only in inbox/all modes */}
-      {!showingBirthdays && (
+      {!showingBirthdays && !showingShared && (
         <div className="px-6 pt-4">
           <TaskInput onAdd={onAddTask} />
         </div>
@@ -242,12 +256,19 @@ export default function InboxTab({
           )}
         </div>
       ) : (
-        /* ── INBOX / ALL TASKS VIEW ── */
+        /* ── INBOX / ALL / SHARED TASKS VIEW ── */
         <div className="safe-scroll-bottom flex-1 overflow-y-auto px-6 pt-3 space-y-1">
           {visiblePending.length === 0 && visibleCompleted.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 opacity-40">
-              <InboxIcon size={40} className="mb-3" />
-              <p className="text-sm">{showingAll ? t(language, 'inbox.noTasks') : t(language, 'inbox.empty')}</p>
+              {showingShared ? <Users size={40} className="mb-3" /> : <InboxIcon size={40} className="mb-3" />}
+              <p className="text-sm">
+                {showingAll ? t(language, 'inbox.noTasks') : showingShared ? t(language, 'inbox.noShared') : t(language, 'inbox.empty')}
+              </p>
+              {showingShared && (
+                <p className="text-xs mt-1.5 text-center max-w-[220px] opacity-70">
+                  {t(language, 'inbox.noSharedHint')}
+                </p>
+              )}
             </div>
           )}
 

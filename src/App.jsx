@@ -244,6 +244,7 @@ function AppContent() {
           <InboxTab
             inboxTasks={inboxTasks}
             scheduledTasks={scheduledTasks}
+            currentUserId={effectiveUser?.id}
             onAddTask={addInboxTask}
             onToggleTask={toggleInboxTask}
             onDeleteTask={deleteInboxTask}

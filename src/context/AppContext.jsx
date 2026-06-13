@@ -31,6 +31,7 @@ function loadNotificationSettings() {
         : DEFAULT_NOTIFICATION_MOMENTS,
       telegramEnabled: Boolean(saved?.telegramEnabled),
       telegramChatId: typeof saved?.telegramChatId === 'string' ? saved.telegramChatId : '',
+      username: typeof saved?.username === 'string' ? saved.username : '',
     }
   } catch {
     return {
@@ -38,6 +39,7 @@ function loadNotificationSettings() {
       defaultMoments: DEFAULT_NOTIFICATION_MOMENTS,
       telegramEnabled: false,
       telegramChatId: '',
+      username: '',
     }
   }
 }
@@ -74,6 +76,7 @@ function notificationSettingsEqual(first, second) {
     Boolean(first.enabled) === Boolean(second.enabled) &&
     Boolean(first.telegramEnabled) === Boolean(second.telegramEnabled) &&
     (first.telegramChatId || '') === (second.telegramChatId || '') &&
+    (first.username || '') === (second.username || '') &&
     arraysEqual(first.defaultMoments, second.defaultMoments)
   )
 }
