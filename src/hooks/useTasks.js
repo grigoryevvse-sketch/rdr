@@ -209,7 +209,7 @@ export function useTasks(user) {
     try {
       await migrateLocalTasksToSupabase(ownerId)
       const [{ data: st }, { data: it }] = await Promise.all([
-        supabase.from('scheduled_tasks').select('*').or(`user_id.eq.${ownerId},shared_with_users.cs.{${ownerId}}`).order('start_time'),
+        supabase.from('scheduled_tasks').select('*').or(`user_id.eq.${ownerId},shared_with_users.cs.{"${ownerId}"}${ownerId !== user?.id ? `,shared_with_users.cs.{"${user?.id}"}` : ''}`).order('start_time'),
         supabase.from('inbox_tasks').select('*').eq('user_id', ownerId).order('created_at'),
       ])
       setScheduledTasks(mergeLocalNotificationMoments(st || []))
