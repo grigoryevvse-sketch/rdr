@@ -149,26 +149,26 @@ drop policy if exists "Users can read their scheduled tasks" on public.scheduled
 create policy "Users can read their scheduled tasks"
   on public.scheduled_tasks
   for select
-  using (public.can_access_owner(user_id));
+  using (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users));
 
 drop policy if exists "Users can insert their scheduled tasks" on public.scheduled_tasks;
 create policy "Users can insert their scheduled tasks"
   on public.scheduled_tasks
   for insert
-  with check (public.can_access_owner(user_id));
+  with check (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users));
 
 drop policy if exists "Users can update their scheduled tasks" on public.scheduled_tasks;
 create policy "Users can update their scheduled tasks"
   on public.scheduled_tasks
   for update
-  using (public.can_access_owner(user_id))
-  with check (public.can_access_owner(user_id));
+  using (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users))
+  with check (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users));
 
 drop policy if exists "Users can delete their scheduled tasks" on public.scheduled_tasks;
 create policy "Users can delete their scheduled tasks"
   on public.scheduled_tasks
   for delete
-  using (public.can_access_owner(user_id));
+  using (public.can_access_owner(user_id) or auth.uid() = any(shared_with_users));
 
 drop policy if exists "Users can read their inbox tasks" on public.inbox_tasks;
 create policy "Users can read their inbox tasks"

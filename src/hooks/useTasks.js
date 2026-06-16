@@ -206,10 +206,16 @@ export function useTasks(user) {
 
   const loadFromSupabase = useCallback(async () => {
     if (!supabase || !ownerId) return
+    const userId = user?.id
     try {
       await migrateLocalTasksToSupabase(ownerId)
+      // Build the filter: own tasks OR shared with ownerId OR shared with userId (for linked accounts)
+      let orFilter = `user_id.eq.${ownerId},shared_with_users.cs.{${ownerId}}`
+      if (userId && userId !== ownerId) {
+        orFilter += `,shared_with_users.cs.{${userId}}`
+      }
       const [{ data: st }, { data: it }] = await Promise.all([
-        supabase.from('scheduled_tasks').select('*').or(`user_id.eq.${ownerId},shared_with_users.cs.{"${ownerId}"}${ownerId !== user?.id ? `,shared_with_users.cs.{"${user?.id}"}` : ''}`).order('start_time'),
+        supabase.from('scheduled_tasks').select('*').or(orFilter).order('start_time'),
         supabase.from('inbox_tasks').select('*').eq('user_id', ownerId).order('created_at'),
       ])
       setScheduledTasks(mergeLocalNotificationMoments(st || []))
@@ -221,7 +227,7 @@ export function useTasks(user) {
     } finally {
       setLoading(false)
     }
-  }, [ownerId])
+  }, [ownerId, user?.id])
 
   // ─── Load tasks ───
   useEffect(() => {
