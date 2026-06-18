@@ -56,6 +56,7 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
       duration: updates.duration,
       repeat_frequency: updates.repeat_frequency || 'none',
       notification_moments: updates.notification_moments,
+      notes: updates.notes !== undefined ? updates.notes : item.notes,
     })
 
     if (result.intent === 'batch' && Array.isArray(result.items)) {
@@ -99,6 +100,7 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
         notification_moments: Array.isArray(item.notification_moments)
           ? item.notification_moments
           : undefined,
+        notes: item.notes || undefined,
       })
       addedScheduled = true
     })

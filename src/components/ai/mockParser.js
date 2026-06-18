@@ -131,14 +131,16 @@ Rules:
 4. date must be "YYYY-MM-DD". Resolve relative dates from today's date (${todayName}). If there is no date, use "${todayISO}" for schedule entries.
 5. time must be "HH:MM" in 24-hour format or null. If an entry belongs on the calendar but no exact time is given, set time to null; the app will use its default time.
 6. duration is minutes. Default to 30 for schedule entries when unspecified. Use null for inbox entries.
-7. repeat_frequency must be one of "daily", "weekly", "monthly", "yearly", or "none".
-8. notification_moments must contain only these app tokens: "start", "before10", "before60", "before1day", "before2days", "before1week", "before1month", "finish", or custom minute tokens like "custom:45".
-9. Birthdays and anniversaries: title format "Birthday: [Name]" or "Anniversary: [Name]", intent "schedule", repeat_frequency "yearly", reminders ["before1week", "before1day", "start"].
-10. Critical events such as flight, doctor, dentist, exam, interview, or show should include reminders ["before1day", "before60"] unless the user gives different reminders.
-11. If an attached image contains a calendar, timetable, schedule, list of appointments, school agenda, meeting plan, or hand-written plan, extract each visible event that has enough information to schedule. Use the user's text to resolve missing dates or context.
-12. If the request or image contains several distinct events or tasks, especially a heavy planning request like a trip, study plan, launch day, or multi-step day plan, return a batch object with an "items" array. Split it into 2-12 concrete entries that can be added at once.
-13. If text in the image is uncertain, use the most likely concise title and keep date/time conservative. Do not invent events that are not visible or implied by the user's text.
-14. Return only raw JSON. No markdown, no explanation.
+7. notes is an optional free-text field for instructions, details, or comments about the event. Extract any extra context from the user's input that is not part of the title (e.g. meeting agenda, preparation steps, addresses, links, dress code). Use the same language as the user's input. Set to null if there is nothing to note.
+8. repeat_frequency must be one of "daily", "weekly", "monthly", "yearly", or "none".
+9. notification_moments must contain only these app tokens: "start", "before10", "before60", "before1day", "before2days", "before1week", "before1month", "finish", or custom minute tokens like "custom:45".
+10. Birthdays and anniversaries: title format "Birthday: [Name]" or "Anniversary: [Name]", intent "schedule", repeat_frequency "yearly", reminders ["before1week", "before1day", "start"].
+11. Critical events such as flight, doctor, dentist, exam, interview, or show should include reminders ["before1day", "before60"] unless the user gives different reminders.
+12. If an attached image contains a calendar, timetable, schedule, list of appointments, school agenda, meeting plan, or hand-written plan, extract each visible event that has enough information to schedule. Use the user's text to resolve missing dates or context.
+13. If the request or image contains several distinct events or tasks, especially a heavy planning request like a trip, study plan, launch day, or multi-step day plan, return a batch object with an "items" array. Split it into 2-12 concrete entries that can be added at once.
+14. If text in the image is uncertain, use the most likely concise title and keep date/time conservative. Do not invent events that are not visible or implied by the user's text.
+15. Overlapping events are fully supported by the app. If the user asks for events that overlap in time (e.g. two events at the same hour, or events whose durations overlap), create them exactly as requested. Never refuse, merge, or shift events to avoid time conflicts.
+16. Return only raw JSON. No markdown, no explanation.
 
 For one item, respond with a raw JSON object matching this schema:
 {
@@ -148,7 +150,8 @@ For one item, respond with a raw JSON object matching this schema:
   "time": "HH:MM" | null,
   "duration": number | null,
   "repeat_frequency": "daily" | "weekly" | "monthly" | "yearly" | "none",
-  "notification_moments": []
+  "notification_moments": [],
+  "notes": "string" | null
 }
 
 For multiple items, respond with this schema:
@@ -162,7 +165,8 @@ For multiple items, respond with this schema:
       "time": "HH:MM" | null,
       "duration": number | null,
       "repeat_frequency": "daily" | "weekly" | "monthly" | "yearly" | "none",
-      "notification_moments": []
+      "notification_moments": [],
+      "notes": "string" | null
     }
   ]
 }`
@@ -235,6 +239,7 @@ function normalizeSingleParsedResult(parsed, input) {
     duration: intent === 'schedule' ? normalizeDuration(safeParsed.duration) : null,
     repeat_frequency: intent === 'schedule' ? repeatFrequency : 'none',
     notification_moments: intent === 'schedule' ? notificationMoments : [],
+    notes: typeof safeParsed.notes === 'string' && safeParsed.notes.trim() ? safeParsed.notes.trim() : undefined,
     raw: input,
   }
 }
@@ -303,9 +308,9 @@ function resolveDateReference(text, baseDate = new Date()) {
   const normalized = text.toLowerCase()
   const base = startOfDay(baseDate)
 
-  if (/\bday after tomorrow\b/.test(normalized)) return format(addDays(base, 2), 'yyyy-MM-dd')
-  if (/\btomorrow\b/.test(normalized)) return format(addDays(base, 1), 'yyyy-MM-dd')
-  if (/\b(today|tonight)\b/.test(normalized)) return format(base, 'yyyy-MM-dd')
+  if (/\b(day after tomorrow|послезавтра)\b/.test(normalized)) return format(addDays(base, 2), 'yyyy-MM-dd')
+  if (/\b(tomorrow|завтра)\b/.test(normalized)) return format(addDays(base, 1), 'yyyy-MM-dd')
+  if (/\b(today|tonight|сегодня)\b/.test(normalized)) return format(base, 'yyyy-MM-dd')
 
   const relativeMatch = normalized.match(/\bin\s+(\d+)\s+(day|days|week|weeks|month|months)\b/)
   if (relativeMatch) {
@@ -390,7 +395,28 @@ function splitMultiEventInput(input) {
 }
 
 function localRegexParse(input, options = {}) {
-  const text = input.toLowerCase().trim()
+  let notes = undefined
+  let mainText = input.trim()
+
+  // Look for notes indicators (case-insensitive)
+  // Indicators like: "notes:", "note:", "comment:", "instruction:", etc. (English & Russian)
+  const notesRegex = /(?:\b(?:notes?|comments?|instructions?|заметк[аи]|комментари[йи]|инструкци[яи])\s*[:\-]\s*|(?:\b(?:with notes?|with comments?|with instructions?|с заметк[ойами]|с комментари[ямеи]|с инструкци[ейямеи])\s+))(.+)$/i
+  const match = mainText.match(notesRegex)
+  if (match) {
+    notes = match[1].trim()
+    mainText = mainText.slice(0, match.index).trim()
+  } else {
+    // Alternatively, split by period followed by space, or by newline
+    // But don't split on dots in time (e.g. 15.00) or dates (e.g. 12.04)
+    // We can use a regex that matches period only if it's followed by space and not preceded/followed by digits
+    const sentences = mainText.split(/(?:\r?\n|(?<!\d)\.(?!\d)\s+)/)
+    if (sentences.length > 1) {
+      mainText = sentences[0].trim()
+      notes = sentences.slice(1).join('. ').trim()
+    }
+  }
+
+  const text = mainText.toLowerCase().trim()
 
   // Determine intent: inbox vs schedule
   const isInbox = /\b(inbox|todo|to-do|to do|add to list|put .+ in)\b/i.test(text)
@@ -452,6 +478,7 @@ function localRegexParse(input, options = {}) {
     duration: intent === 'schedule' ? duration : null,
     repeat_frequency: 'none',
     notification_moments: [],
+    notes: notes || undefined,
     raw: input,
   }
 }

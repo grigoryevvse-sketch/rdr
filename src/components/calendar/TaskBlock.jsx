@@ -177,6 +177,11 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
             {language === 'ru' ? `От: ${task.shared_by_name}` : `From: ${task.shared_by_name}`}
           </p>
         )}
+        {task.notes && height >= 72 && (
+          <p className="text-[10px] mt-0.5 opacity-70 text-white truncate">
+            {task.notes}
+          </p>
+        )}
       </div>
 
       {/* Delete button on hover */}

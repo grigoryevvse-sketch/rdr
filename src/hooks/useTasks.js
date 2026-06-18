@@ -90,6 +90,7 @@ function normalizeScheduledTask(task) {
     shared_by_name: safeTask.shared_by_name || undefined,
     user_id: safeTask.user_id || undefined,
     shared_with_users: Array.isArray(safeTask.shared_with_users) ? safeTask.shared_with_users : [],
+    notes: typeof safeTask.notes === 'string' ? safeTask.notes : undefined,
   }
 }
 

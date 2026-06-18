@@ -2,19 +2,27 @@ import { Trash2, Circle, CheckCircle2, CalendarPlus } from 'lucide-react'
 import { useApp } from '../../context/AppContext'
 import { t } from '../../utils/i18n'
 
-export default function TaskItem({ task, detail, badge, onToggle, onDelete, onSchedule }) {
+export default function TaskItem({ task, detail, badge, onToggle, onDelete, onSchedule, onEdit }) {
   const { theme, language } = useApp()
   const canSchedule = !task.completed && onSchedule
+  const canEdit = !task.completed && onEdit && task.source === 'scheduled'
 
   function handleItemClick() {
-    if (canSchedule) onSchedule()
+    if (canSchedule) {
+      onSchedule()
+    } else if (canEdit) {
+      onEdit()
+    }
   }
 
   function handleItemKeyDown(e) {
-    if (!canSchedule) return
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      onSchedule()
+      if (canSchedule) {
+        onSchedule()
+      } else if (canEdit) {
+        onEdit()
+      }
     }
   }
 
@@ -27,12 +35,12 @@ export default function TaskItem({ task, detail, badge, onToggle, onDelete, onSc
     <div
       onClick={handleItemClick}
       onKeyDown={handleItemKeyDown}
-      role={canSchedule ? 'button' : undefined}
-      tabIndex={canSchedule ? 0 : undefined}
-      title={canSchedule ? t(language, 'inbox.clickToSchedule') : undefined}
+      role={(canSchedule || canEdit) ? 'button' : undefined}
+      tabIndex={(canSchedule || canEdit) ? 0 : undefined}
+      title={canSchedule ? t(language, 'inbox.clickToSchedule') : (canEdit ? (language === 'ru' ? 'Редактировать событие' : 'Edit event') : undefined)}
       className={`flex items-center gap-3 px-3 py-3 rounded-xl group transition-all duration-200 outline-none
       ${theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-gray-50'}
-      ${canSchedule ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-accent/60' : ''}
+      ${(canSchedule || canEdit) ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-accent/60' : ''}
       ${task.completed ? 'opacity-50' : ''}`}
     >
       {/* Checkbox */}
@@ -61,6 +69,11 @@ export default function TaskItem({ task, detail, badge, onToggle, onDelete, onSc
         {detail && (
           <p className={`mt-0.5 truncate text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
             {detail}
+          </p>
+        )}
+        {task.notes && (
+          <p className={`mt-1 text-xs whitespace-pre-wrap line-clamp-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+            {task.notes}
           </p>
         )}
       </div>

@@ -33,7 +33,8 @@ alter table public.scheduled_tasks
     check (repeat_frequency in ('none', 'daily', 'weekly', 'monthly', 'yearly')),
   add column if not exists repeat_interval integer not null default 1 check (repeat_interval >= 1),
   add column if not exists notification_moments text[] not null default array['start']::text[],
-  add column if not exists created_at timestamptz not null default now();
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists notes text;
 
 create table if not exists public.inbox_tasks (
   id text primary key,

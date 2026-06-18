@@ -53,6 +53,7 @@ export default function InboxTab({
 }) {
   const { theme, language } = useApp()
   const [schedulingTask, setSchedulingTask] = useState(null)
+  const [editingTask, setEditingTask] = useState(null)
   const [viewMode, setViewMode] = useState('inbox')
 
   const pending = inboxTasks.filter(t => !t.completed)
@@ -289,6 +290,7 @@ export default function InboxTab({
                   : onDeleteTask(task.id)
               )}
               onSchedule={task.source === 'scheduled' ? undefined : () => setSchedulingTask(task)}
+              onEdit={task.source === 'scheduled' ? () => setEditingTask(task) : undefined}
             />
           ))}
 
@@ -316,6 +318,7 @@ export default function InboxTab({
                       ? onDeleteScheduledTask?.(task.id)
                       : onDeleteTask(task.id)
                   )}
+                  onEdit={task.source === 'scheduled' ? () => setEditingTask(task) : undefined}
                 />
               ))}
             </>
@@ -332,6 +335,19 @@ export default function InboxTab({
           onAdd={(task) => {
             onScheduleTask(schedulingTask.id, task)
             setSchedulingTask(null)
+          }}
+        />
+      )}
+
+      {editingTask && (
+        <AddTaskModal
+          mode="edit"
+          initialTask={editingTask}
+          selectedDate={editingTask.date || formatDateISO(new Date())}
+          onClose={() => setEditingTask(null)}
+          onAdd={(updates) => {
+            onToggleScheduledTask?.(editingTask.id, updates)
+            setEditingTask(null)
           }}
         />
       )}

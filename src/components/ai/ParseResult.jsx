@@ -93,6 +93,17 @@ function ResultFields({ result, compact = false }) {
           </div>
         </div>
       )}
+      {result.notes && (
+        <div className="flex items-start gap-3">
+          <AlignLeft size={16} className={theme === 'dark' ? 'text-gray-500 mt-0.5' : 'text-gray-400 mt-0.5'} />
+          <div>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>{language === 'ru' ? 'Заметки' : 'Notes'}</p>
+            <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'} whitespace-pre-line`}>
+              {result.notes}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

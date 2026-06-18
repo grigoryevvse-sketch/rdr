@@ -90,6 +90,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   const { accentColor, theme, language, notificationSettings } = useApp()
   const initialStartTime = normalizeTimeInput(initialTask?.start_time || '09:00')
   const [title, setTitle] = useState(initialTask?.title || '')
+  const [notes, setNotes] = useState(initialTask?.notes || '')
   const [date, setDate] = useState(initialTask?.date || selectedDate)
   const [startTime, setStartTime] = useState(initialStartTime)
   const [exactTimeDraft, setExactTimeDraft] = useState(initialStartTime)
@@ -228,6 +229,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
       notification_moments: notificationMoments,
       repeat_frequency: repeatEnabled ? repeatFrequency : 'none',
       repeat_interval: 1,
+      notes: notes.trim() || undefined,
     })
   }
 
@@ -355,6 +357,16 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
             placeholder={t(language, 'calendar.taskName')}
             autoFocus
             className={`w-full px-4 py-3 rounded-xl text-sm outline-none transition-all
+              ${fieldClass} ${theme === 'dark' ? 'placeholder-gray-500' : 'placeholder-gray-400'}`}
+          />
+
+          {/* Notes / Comments */}
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder={language === 'ru' ? 'Заметки, инструкции, комментарии...' : 'Notes, instructions, comments...'}
+            rows={2}
+            className={`w-full px-4 py-3 rounded-xl text-sm outline-none transition-all resize-none
               ${fieldClass} ${theme === 'dark' ? 'placeholder-gray-500' : 'placeholder-gray-400'}`}
           />
 

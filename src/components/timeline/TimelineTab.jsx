@@ -218,6 +218,11 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                               <span>{language === 'ru' ? 'Повторяется' : getRepeatLabel(task)}</span>
                             </p>
                           )}
+                          {task.notes && (
+                            <p className={`mt-1 text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} line-clamp-2`}>
+                              {task.notes}
+                            </p>
+                          )}
                           {isOverlapping && (
                             <p className="mt-2 text-sm font-bold text-[#ff8f87]">
                               {language === 'ru' ? 'Задачи пересекаются' : 'Tasks are overlapping'}
