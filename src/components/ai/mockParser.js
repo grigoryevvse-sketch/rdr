@@ -307,9 +307,9 @@ function resolveDateReference(text, baseDate = new Date()) {
   const normalized = text.toLowerCase()
   const base = startOfDay(baseDate)
 
-  if (/\b(day after tomorrow|послезавтра)\b/.test(normalized)) return format(addDays(base, 2), 'yyyy-MM-dd')
-  if (/\b(tomorrow|завтра)\b/.test(normalized)) return format(addDays(base, 1), 'yyyy-MM-dd')
-  if (/\b(today|tonight|сегодня)\b/.test(normalized)) return format(base, 'yyyy-MM-dd')
+  if (/(?:^|[^а-яёa-z0-9])(day after tomorrow|послезавтра)(?:$|[^а-яёa-z0-9])/.test(normalized)) return format(addDays(base, 2), 'yyyy-MM-dd')
+  if (/(?:^|[^а-яёa-z0-9])(tomorrow|завтра)(?:$|[^а-яёa-z0-9])/.test(normalized)) return format(addDays(base, 1), 'yyyy-MM-dd')
+  if (/(?:^|[^а-яёa-z0-9])(today|tonight|сегодня)(?:$|[^а-яёa-z0-9])/.test(normalized)) return format(base, 'yyyy-MM-dd')
 
   const relativeMatch = normalized.match(/\bin\s+(\d+)\s+(day|days|week|weeks|month|months)\b/)
   if (relativeMatch) {
@@ -399,7 +399,7 @@ function localRegexParse(input, options = {}) {
 
   // Look for notes indicators (case-insensitive)
   // Indicators like: "notes:", "note:", "comment:", "instruction:", etc. (English & Russian)
-  const notesRegex = /(?:\b(?:notes?|comments?|instructions?|заметк[аи]|комментари[йи]|инструкци[яи])\s*[:\-]\s*|(?:\b(?:with notes?|with comments?|with instructions?|с заметк[ойами]|с комментари[ямеи]|с инструкци[ейямеи])\s+))(.+)$/i
+  const notesRegex = /(?:^|[^а-яА-ЯёЁa-zA-Z0-9])(?:with\s+|с\s+)?(?:notes?|comments?|instructions?|заметк(?:а|и|ой|ами)|комментари(?:й|и|ем|ями)|инструкци(?:я|и|ей|ями))\s*(?:[:\-]\s*|\s+)(.+)$/i
   const match = mainText.match(notesRegex)
   if (match) {
     notes = match[1].trim()
@@ -418,28 +418,36 @@ function localRegexParse(input, options = {}) {
   const text = mainText.toLowerCase().trim()
 
   // Determine intent: inbox vs schedule
-  const isInbox = /\b(inbox|todo|to-do|to do|add to list|put .+ in)\b/i.test(text)
+  const isInbox = /(?:^|[^а-яА-ЯёЁa-zA-Z0-9])(inbox|todo|to-do|to do|add to list|put .+ in|инбокс|входящие|список дел)(?:$|[^а-яА-ЯёЁa-zA-Z0-9])/i.test(text)
   const intent = isInbox ? 'inbox' : 'schedule'
 
-  // Extract time: "at 3 PM", "at 14:00", "at 3:30pm"
+  // Extract time: "at 15:00", "at 3 PM", "в 15:00", "в 15", "15:00", "3:30"
   let time = null
-  const timeMatch = text.match(/at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i)
-  if (timeMatch) {
-    let hours = parseInt(timeMatch[1])
-    const minutes = parseInt(timeMatch[2] || '0')
-    const period = timeMatch[3]?.toLowerCase()
+  const hhmmMatch = text.match(/(?:^|[^а-яА-ЯёЁa-zA-Z0-9])(?:at\s+|в\s+)?(\d{1,2}):(\d{2})\s*(am|pm)?(?:$|[^а-яА-ЯёЁa-zA-Z0-9])/i)
+  if (hhmmMatch) {
+    let hours = parseInt(hhmmMatch[1])
+    const minutes = parseInt(hhmmMatch[2])
+    const period = hhmmMatch[3]?.toLowerCase()
     if (period === 'pm' && hours < 12) hours += 12
     if (period === 'am' && hours === 12) hours = 0
     time = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+  } else {
+    const hourOnlyMatch = text.match(/(?:^|[^а-яА-ЯёЁa-zA-Z0-9])(?:at\s+|в\s+)(\d{1,2})\s*(?:pm|am|часа|часов)?(?:$|[^а-яА-ЯёЁa-zA-Z0-9])/i)
+    if (hourOnlyMatch) {
+      let hours = parseInt(hourOnlyMatch[1])
+      const period = text.match(/(?:^|[^а-яА-ЯёЁa-zA-Z0-9])(?:at\s+|в\s+)\d{1,2}\s*(pm)(?:$|[^а-яА-ЯёЁa-zA-Z0-9])/i) ? 'pm' : null
+      if (period === 'pm' && hours < 12) hours += 12
+      time = `${hours.toString().padStart(2, '0')}:00`
+    }
   }
 
-  // Extract duration: "for 45 minutes", "for 1 hour", "for 1.5 hours"
+  // Extract duration: "for 45 minutes", "на 45 минут", "на 1 час"
   let duration = 30 // default 30 minutes
-  const durationMatch = text.match(/for\s+(\d+\.?\d*)\s*(min(?:ute)?s?|hours?|hr)/i)
+  const durationMatch = text.match(/(?:for|на)\s+(\d+\.?\d*)\s*(min(?:ute)?s?|hours?|hr|минут[ыа]?|мин|час[аов]?|ч)/i)
   if (durationMatch) {
     const amount = parseFloat(durationMatch[1])
     const unit = durationMatch[2].toLowerCase()
-    if (unit.startsWith('h')) {
+    if (unit.startsWith('h') || unit.startsWith('час') || unit === 'ч') {
       duration = Math.round(amount * 60)
     } else {
       duration = Math.round(amount)
@@ -450,21 +458,21 @@ function localRegexParse(input, options = {}) {
 
   // Extract title: remove time/date/duration phrases, intent phrases
   let title = text
-    .replace(/\b(schedule|put|add|create|set up|set|plan|remind me to|reminder)\b/gi, '')
-    .replace(/at\s+\d{1,2}(:\d{2})?\s*(am|pm)?/gi, '')
-    .replace(/for\s+\d+\.?\d*\s*(min(?:ute)?s?|hours?|hr)/gi, '')
-    .replace(/\b(day after tomorrow|tomorrow|today|tonight|next week|next month)\b/gi, '')
-    .replace(/\bin\s+\d+\s+(day|days|week|weeks|month|months)\b/gi, '')
-    .replace(/\b(on|this|next)?\s*(sun(?:day)?|mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:rs|rsday)?|fri(?:day)?|sat(?:urday)?)\b/gi, '')
-    .replace(/\b(on\s+)?((jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\.?\s+\d{1,2}(st|nd|rd|th)?(,?\s+\d{4})?)\b/gi, '')
-    .replace(/\b(on\s+)?\d{1,2}[/-]\d{1,2}([/-]\d{2,4})?\b/gi, '')
-    .replace(/\b(in my inbox|to my inbox|in inbox|to inbox|in my to-?do|to my list|to list)\b/gi, '')
-    .replace(/\b(a|an|the|my)\b/gi, '')
+    .replace(/(?:^|[^а-яА-ЯёЁa-zA-Z0-9])(schedule|put|add|create|set up|set|plan|remind me to|reminder|запланируй|запланировать|добавь|создай|напомни)(?:$|[^а-яА-ЯёЁa-zA-Z0-9])/gi, ' ')
+    .replace(/(?:at|в)\s+\d{1,2}(?::\d{2})?\s*(?:am|pm|часа|часов|час)?/gi, ' ')
+    .replace(/(?:for|на)\s+\d+\.?\d*\s*(?:min(?:ute)?s?|hours?|hr|минут[ыа]?|мин|час[аов]?|ч)/gi, ' ')
+    .replace(/(?:^|[^а-яА-ЯёЁa-zA-Z0-9])(day after tomorrow|tomorrow|today|tonight|next week|next month|послезавтра|завтра|сегодня)(?:$|[^а-яА-ЯёЁa-zA-Z0-9])/gi, ' ')
+    .replace(/\bin\s+\d+\s+(day|days|week|weeks|month|months)\b/gi, ' ')
+    .replace(/\b(on|this|next)?\s*(sun(?:day)?|mon(?:day)?|tue(?:s|sday)?|wed(?:nesday)?|thu(?:rs|rsday)?|fri(?:day)?|sat(?:urday)?)\b/gi, ' ')
+    .replace(/\b(on\s+)?((jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\.?\s+\d{1,2}(st|nd|rd|th)?(,?\s+\d{4})?)\b/gi, ' ')
+    .replace(/\b(on\s+)?\d{1,2}[/-]\d{1,2}([/-]\d{2,4})?\b/gi, ' ')
+    .replace(/(?:^|[^а-яА-ЯёЁa-zA-Z0-9])(in my inbox|to my inbox|in inbox|to inbox|in my to-?do|to my list|to list|в инбокс|во входящие|в список дел)(?:$|[^а-яА-ЯёЁa-zA-Z0-9])/gi, ' ')
+    .replace(/\b(a|an|the|my)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 
   // Capitalize first letter of each word
-  title = title.replace(/\b\w/g, c => c.toUpperCase())
+  title = title.replace(/(?:^|\s)[а-яёa-z]/gi, c => c.toUpperCase())
 
   // If title is empty, use a generic one
   if (!title) title = 'New Task'
