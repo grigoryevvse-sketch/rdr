@@ -20,8 +20,9 @@ const WEEKDAYS = {
 }
 
 const MODEL_CANDIDATES = [
-  "gemini-2.0-flash",
-  "gemini-1.5-flash"
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+  "gemini-2.0-flash"
 ]
 
 const VALID_RECURRENCES = new Set(['daily', 'weekly', 'monthly', 'yearly'])
