@@ -20,10 +20,8 @@ const WEEKDAYS = {
 }
 
 const MODEL_CANDIDATES = [
-  "gemini-3.1-flash-live-preview", // Gemini 3 Flash Live Preview.
-  "gemini-3-flash-preview", // Основная Gemini 3 Flash модель для generateContent.
-  "gemini-2.5-flash",       // Фолбэк.
-  "gemini-2.5-flash-lite",  // Резервный фолбэк.
+  "gemini-2.0-flash",
+  "gemini-1.5-flash"
 ]
 
 const VALID_RECURRENCES = new Set(['daily', 'weekly', 'monthly', 'yearly'])

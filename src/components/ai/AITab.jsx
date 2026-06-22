@@ -29,7 +29,13 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
     if (!result || result.intent !== 'batch' || !Array.isArray(result.items)) return
 
     const remainingItems = result.items.filter((_, index) => index !== indexToRemove)
-    setResult(remainingItems.length > 0 ? { ...result, items: remainingItems } : null)
+    if (remainingItems.length === 0) {
+      setResult(null)
+    } else if (remainingItems.length === 1) {
+      setResult(remainingItems[0])
+    } else {
+      setResult({ ...result, items: remainingItems })
+    }
   }
 
   function getResultItems() {

@@ -85,7 +85,7 @@ function normalizeScheduledTask(task) {
     repeat_interval: Math.max(Number(safeTask.repeat_interval) || 1, 1),
     notification_moments: Array.isArray(safeTask.notification_moments)
       ? safeTask.notification_moments
-      : undefined,
+      : ['start'],
     shared_by_email: safeTask.shared_by_email || undefined,
     shared_by_name: safeTask.shared_by_name || undefined,
     user_id: safeTask.user_id || undefined,
@@ -94,13 +94,44 @@ function normalizeScheduledTask(task) {
   }
 }
 
+const DB_COLUMNS = [
+  'id',
+  'user_id',
+  'title',
+  'date',
+  'start_time',
+  'duration',
+  'color',
+  'icon',
+  'completed',
+  'repeat_frequency',
+  'repeat_interval',
+  'notification_moments',
+  'created_at',
+  'notes',
+  'shared_by_email',
+  'shared_by_name',
+  'shared_with_users',
+]
+
+function prepareForDb(task) {
+  const dbTask = {}
+  for (const key of DB_COLUMNS) {
+    if (task[key] !== undefined) {
+      dbTask[key] = task[key]
+    }
+  }
+  return dbTask
+}
+
 async function insertScheduledTask(task, userId) {
   const taskToInsert = normalizeScheduledTask(task)
   if (!taskToInsert.user_id) taskToInsert.user_id = userId
   
+  const cleanTask = prepareForDb(taskToInsert)
   const { error } = await supabase
     .from('scheduled_tasks')
-    .insert(taskToInsert)
+    .insert(cleanTask)
 
   if (error) throw error
   return true
@@ -330,7 +361,7 @@ export function useTasks(user) {
 
     if (canUseSupabase) {
       try {
-        const { error: updateError } = await supabase.from('scheduled_tasks').update(updates).eq('id', id)
+        const { error: updateError } = await supabase.from('scheduled_tasks').update(prepareForDb(updates)).eq('id', id)
         if (updateError) throw updateError
         if (nextRepeatTask) await insertScheduledTask(nextRepeatTask, ownerId)
         applyLocalUpdate()
