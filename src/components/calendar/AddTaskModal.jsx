@@ -117,6 +117,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   )
   const [newCustomReminderValue, setNewCustomReminderValue] = useState(30)
   const [newCustomReminderUnit, setNewCustomReminderUnit] = useState('minutes')
+  const [showNotificationsPanel, setShowNotificationsPanel] = useState(false)
 
   // Sharing states
   const [showSharePanel, setShowSharePanel] = useState(false)
@@ -244,9 +245,26 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   }
 
   function updateExactStartTime(value) {
-    const nextValue = value.replace(/[^\d:]/g, '').slice(0, 5)
+    const digits = value.replace(/\D/g, '').slice(0, 4)
+    const isDeleting = value.length < exactTimeDraft.length
+
+    let nextValue = ''
+    if (digits.length > 0) {
+      if (digits.length <= 2) {
+        if (isDeleting) {
+          nextValue = digits
+        } else {
+          nextValue = digits.length === 2 ? digits + ':' : digits
+        }
+      } else {
+        nextValue = digits.slice(0, 2) + ':' + digits.slice(2)
+      }
+    }
+
     setExactTimeDraft(nextValue)
-    if (EXACT_TIME_PATTERN.test(nextValue)) setStartTime(normalizeTimeInput(nextValue))
+    if (EXACT_TIME_PATTERN.test(nextValue)) {
+      setStartTime(normalizeTimeInput(nextValue))
+    }
   }
 
   function commitExactStartTime() {
@@ -338,7 +356,7 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
               type="button"
               onClick={handleSubmit}
               aria-label={mode === 'edit' ? t(language, 'calendar.saveTask') : t(language, 'calendar.addTask')}
-              className="md:hidden w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center hover:opacity-90 active:scale-95 transition cursor-pointer"
+              className="w-9 h-9 rounded-xl bg-accent text-white flex items-center justify-center hover:opacity-90 active:scale-95 transition cursor-pointer"
             >
               <Check size={18} />
             </button>
@@ -624,87 +642,135 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className={`text-xs font-medium block ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t(language, 'calendar.notifications')}
-              </label>
-              <span className={`text-[11px] font-medium ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                {notificationMoments.length
-                  ? (language === 'ru' ? `${notificationMoments.length} выбрано` : `${notificationMoments.length} selected`)
-                  : (language === 'ru' ? 'Выключено для этой задачи' : 'Off for this task')}
-              </span>
-            </div>
-            <div className={`rounded-2xl p-3 space-y-2 ${panelClass}`}>
-              {NOTIFICATION_MOMENTS.map((moment) => {
-                const selected = notificationMoments.includes(moment.id)
-                return (
-                  <button
-                    key={moment.id}
-                    type="button"
-                    onClick={() => toggleNotificationMoment(moment.id)}
-                    className={`w-full min-h-12 rounded-xl px-3 py-2 flex items-center gap-3 text-left transition cursor-pointer
-                      ${selected
-                        ? 'bg-accent/15 border border-accent/40 text-accent'
-                        : theme === 'dark'
-                          ? 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
-                          : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'}`}
-                  >
+            <button
+              type="button"
+              onClick={() => setShowNotificationsPanel(!showNotificationsPanel)}
+              className={`w-full rounded-xl px-3 py-2.5 text-sm font-semibold text-left transition cursor-pointer flex items-center justify-between
+                ${showNotificationsPanel
+                  ? 'bg-accent/15 text-accent border border-accent/40'
+                  : theme === 'dark'
+                    ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+            >
+              <div className="flex items-center gap-2">
+                <Bell size={14} />
+                <span>{t(language, 'calendar.notifications')}</span>
+                <span className="text-[11px] font-medium opacity-80 ml-1">
+                  ({notificationMoments.length
+                    ? (language === 'ru' ? `${notificationMoments.length} выбрано` : `${notificationMoments.length} selected`)
+                    : (language === 'ru' ? 'выкл' : 'off')})
+                </span>
+              </div>
+              <ChevronRight size={14} className={`transition-transform duration-200 ${showNotificationsPanel ? 'rotate-90' : ''}`} />
+            </button>
+
+            {showNotificationsPanel && (
+              <div className={`mt-2 rounded-2xl p-3 space-y-2 animate-fade-in ${panelClass}`}>
+                {NOTIFICATION_MOMENTS.map((moment) => {
+                  const selected = notificationMoments.includes(moment.id)
+                  return (
+                    <button
+                      key={moment.id}
+                      type="button"
+                      onClick={() => toggleNotificationMoment(moment.id)}
+                      className={`w-full min-h-12 rounded-xl px-3 py-2 flex items-center gap-3 text-left transition cursor-pointer
+                        ${selected
+                          ? 'bg-accent/15 border border-accent/40 text-accent'
+                          : theme === 'dark'
+                            ? 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
+                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'}`}
+                    >
+                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+                        ${selected ? 'bg-accent text-white' : theme === 'dark' ? 'bg-white/5' : 'bg-gray-100'}`}
+                      >
+                        <Bell size={15} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">{language === 'ru' ? MOMENT_TEXT_RU[moment.id]?.[0] || moment.label : moment.label}</span>
+                        <span className={`block text-xs ${selected ? 'text-accent/80' : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {language === 'ru' ? MOMENT_TEXT_RU[moment.id]?.[1] || moment.description : moment.description}
+                        </span>
+                      </span>
+                    </button>
+                  )
+                })}
+
+                <div className={`rounded-xl border p-3 transition
+                  ${customReminderMinutes.length
+                    ? 'bg-accent/15 border-accent/40'
+                    : theme === 'dark'
+                      ? 'bg-white/5 border-white/10'
+                      : 'bg-white border-gray-200'}`}
+                >
+                  <div className="flex items-center gap-3">
                     <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                      ${selected ? 'bg-accent text-white' : theme === 'dark' ? 'bg-white/5' : 'bg-gray-100'}`}
+                      ${customReminderMinutes.length ? 'bg-accent text-white' : theme === 'dark' ? 'bg-white/5 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
                     >
                       <Bell size={15} />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-sm font-semibold">{language === 'ru' ? MOMENT_TEXT_RU[moment.id]?.[0] || moment.label : moment.label}</span>
-                      <span className={`block text-xs ${selected ? 'text-accent/80' : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                        {language === 'ru' ? MOMENT_TEXT_RU[moment.id]?.[1] || moment.description : moment.description}
+                      <span className={`block text-sm font-semibold ${customReminderMinutes.length ? 'text-accent' : theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {language === 'ru' ? 'Свои напоминания' : 'Custom reminders'}
+                      </span>
+                      <span className={`block text-xs ${customReminderMinutes.length ? 'text-accent/80' : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
+                        {language === 'ru' ? 'Добавь уведомления до начала' : 'Add alerts before start'}
                       </span>
                     </span>
-                  </button>
-                )
-              })}
+                  </div>
 
-              <div className={`rounded-xl border p-3 transition
-                ${customReminderMinutes.length
-                  ? 'bg-accent/15 border-accent/40'
-                  : theme === 'dark'
-                    ? 'bg-white/5 border-white/10'
-                    : 'bg-white border-gray-200'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
-                    ${customReminderMinutes.length ? 'bg-accent text-white' : theme === 'dark' ? 'bg-white/5 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
-                  >
-                    <Bell size={15} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className={`block text-sm font-semibold ${customReminderMinutes.length ? 'text-accent' : theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                      {language === 'ru' ? 'Свои напоминания' : 'Custom reminders'}
-                    </span>
-                    <span className={`block text-xs ${customReminderMinutes.length ? 'text-accent/80' : theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                      {language === 'ru' ? 'Добавь уведомления до начала' : 'Add alerts before start'}
-                    </span>
-                  </span>
-                </div>
+                  <div className="mt-3 space-y-2">
+                    {customReminderMinutes.map((minutes) => {
+                      const reminder = splitCustomReminderMinutes(minutes)
+                      return (
+                      <div key={`custom-${minutes}`} className="grid grid-cols-[minmax(0,1fr)_7.25rem_auto] gap-2 items-center animate-fade-in">
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={reminder.value}
+                          onChange={(e) => updateCustomReminder(minutes, e.target.value, reminder.unit)}
+                          aria-label={`Custom reminder ${formatMinutesBefore(minutes)}`}
+                          className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none ${fieldClass}`}
+                        />
+                        <select
+                          value={reminder.unit}
+                          onChange={(e) => updateCustomReminder(minutes, reminder.value, e.target.value)}
+                          aria-label={`Custom reminder unit for ${formatMinutesBefore(minutes)}`}
+                          className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer ${fieldClass}`}
+                        >
+                          {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
+                            <option key={unit.value} value={unit.value}>{language === 'ru' ? UNIT_LABELS_RU[unit.value] || unit.label : unit.label}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => removeCustomReminder(minutes)}
+                          aria-label={`Remove ${formatMinutesBefore(minutes)}`}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition cursor-pointer
+                            ${theme === 'dark'
+                              ? 'bg-white/5 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-white/10'
+                              : 'bg-white text-gray-500 hover:bg-red-50 hover:text-red-500 border border-gray-200'}`}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                      )
+                    })}
 
-                <div className="mt-3 space-y-2">
-                  {customReminderMinutes.map((minutes) => {
-                    const reminder = splitCustomReminderMinutes(minutes)
-                    return (
-                    <div key={`custom-${minutes}`} className="grid grid-cols-[minmax(0,1fr)_7.25rem_auto] gap-2 items-center animate-fade-in">
+                    <div className="grid grid-cols-[minmax(0,1fr)_7.25rem_auto] gap-2 items-center">
                       <input
                         type="number"
                         min="1"
                         step="1"
-                        value={reminder.value}
-                        onChange={(e) => updateCustomReminder(minutes, e.target.value, reminder.unit)}
-                        aria-label={`Custom reminder ${formatMinutesBefore(minutes)}`}
+                        value={newCustomReminderValue}
+                        onChange={(e) => setNewCustomReminderValue(Math.max(1, Number(e.target.value) || 1))}
+                        aria-label={language === 'ru' ? 'Новое своё напоминание' : 'New custom reminder amount'}
                         className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none ${fieldClass}`}
                       />
                       <select
-                        value={reminder.unit}
-                        onChange={(e) => updateCustomReminder(minutes, reminder.value, e.target.value)}
-                        aria-label={`Custom reminder unit for ${formatMinutesBefore(minutes)}`}
+                        value={newCustomReminderUnit}
+                        onChange={(e) => setNewCustomReminderUnit(e.target.value)}
+                        aria-label={language === 'ru' ? 'Единица нового напоминания' : 'New custom reminder unit'}
                         className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer ${fieldClass}`}
                       >
                         {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
@@ -713,51 +779,17 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       </select>
                       <button
                         type="button"
-                        onClick={() => removeCustomReminder(minutes)}
-                        aria-label={`Remove ${formatMinutesBefore(minutes)}`}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition cursor-pointer
-                          ${theme === 'dark'
-                            ? 'bg-white/5 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-white/10'
-                            : 'bg-white text-gray-500 hover:bg-red-50 hover:text-red-500 border border-gray-200'}`}
+                        onClick={addCustomReminder}
+                        className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center hover:opacity-90 transition cursor-pointer"
+                        aria-label={language === 'ru' ? 'Добавить своё напоминание' : 'Add custom reminder'}
                       >
-                        <Trash2 size={15} />
+                        <Plus size={16} />
                       </button>
                     </div>
-                    )
-                  })}
-
-                  <div className="grid grid-cols-[minmax(0,1fr)_7.25rem_auto] gap-2 items-center">
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={newCustomReminderValue}
-                      onChange={(e) => setNewCustomReminderValue(Math.max(1, Number(e.target.value) || 1))}
-                      aria-label={language === 'ru' ? 'Новое своё напоминание' : 'New custom reminder amount'}
-                      className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none ${fieldClass}`}
-                    />
-                    <select
-                      value={newCustomReminderUnit}
-                      onChange={(e) => setNewCustomReminderUnit(e.target.value)}
-                      aria-label={language === 'ru' ? 'Единица нового напоминания' : 'New custom reminder unit'}
-                      className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer ${fieldClass}`}
-                    >
-                      {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
-                        <option key={unit.value} value={unit.value}>{language === 'ru' ? UNIT_LABELS_RU[unit.value] || unit.label : unit.label}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={addCustomReminder}
-                      className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center hover:opacity-90 transition cursor-pointer"
-                      aria-label={language === 'ru' ? 'Добавить своё напоминание' : 'Add custom reminder'}
-                    >
-                      <Plus size={16} />
-                    </button>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Share Task Section */}
