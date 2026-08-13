@@ -34,8 +34,8 @@ function isAuthorized(request) {
   return request.headers.authorization === `Bearer ${cronSecret}` || querySecret === cronSecret
 }
 
-function getSettingsForTask(settingsByUser, task) {
-  const userSettings = settingsByUser.get(task.user_id)
+function getSettingsForUser(settingsByUser, userId) {
+  const userSettings = settingsByUser.get(userId)
   const fallbackTelegramChatId = String(process.env.TELEGRAM_CHAT_ID || '').trim()
 
   if (userSettings) {
@@ -51,7 +51,7 @@ function getSettingsForTask(settingsByUser, task) {
   }
 
   return {
-    user_id: task.user_id,
+    user_id: userId,
     browser_enabled: false,
     telegram_enabled: Boolean(fallbackTelegramChatId),
     telegram_chat_id: fallbackTelegramChatId,
@@ -88,7 +88,7 @@ export default async function handler(request, response) {
   const [{ data: tasks, error: tasksError }, { data: settings, error: settingsError }] = await Promise.all([
     supabase
       .from('scheduled_tasks')
-      .select('id,user_id,title,date,start_time,duration,completed,notification_moments')
+      .select('id,user_id,title,date,start_time,duration,completed,notification_moments,shared_with_users')
       .eq('completed', false)
       .gte('date', minTaskDate)
       .lte('date', maxTaskDate),
@@ -110,46 +110,51 @@ export default async function handler(request, response) {
   let due = 0
 
   for (const task of tasks || []) {
-    const userSettings = getSettingsForTask(settingsByUser, task)
-    if (!userSettings?.browser_enabled && !userSettings?.telegram_enabled) continue
+    const recipientIds = Array.isArray(task.shared_with_users) ? task.shared_with_users : []
+    const targetUserIds = Array.from(new Set([task.user_id, ...recipientIds].filter(Boolean)))
 
-    const moments = Array.isArray(task.notification_moments) && task.notification_moments.length
-      ? task.notification_moments
-      : userSettings.default_moments || DEFAULT_MOMENTS
+    for (const targetUserId of targetUserIds) {
+      const userSettings = getSettingsForUser(settingsByUser, targetUserId)
+      if (!userSettings?.browser_enabled && !userSettings?.telegram_enabled) continue
 
-    for (const momentId of moments) {
-      const triggerAt = getMomentDate(task, momentId, userSettings.time_zone || 'UTC')
-      checked += 1
+      const moments = Array.isArray(task.notification_moments) && task.notification_moments.length
+        ? task.notification_moments
+        : userSettings.default_moments || DEFAULT_MOMENTS
 
-      if (!triggerAt || !isDue(triggerAt, now)) continue
-      due += 1
+      for (const momentId of moments) {
+        const triggerAt = getMomentDate(task, momentId, userSettings.time_zone || 'UTC')
+        checked += 1
 
-      const key = notificationKey(task, momentId)
-      const { error: deliveryError } = await supabase
-        .from('notification_deliveries')
-        .insert({
-          notification_key: key,
-          user_id: task.user_id,
-          task_id: task.id,
-          moment_id: momentId,
-          trigger_at: triggerAt.toISOString(),
-        })
+        if (!triggerAt || !isDue(triggerAt, now)) continue
+        due += 1
 
-      if (deliveryError) {
-        skipped += 1
-        continue
-      }
-
-      try {
-        const sentCount = await deliverNotification(supabase, userSettings, task, momentId, key)
-        if (sentCount < 1) throw new Error('No notification channel is available')
-        delivered += 1
-      } catch {
-        failed += 1
-        await supabase
+        const key = notificationKey(task, momentId, targetUserId)
+        const { error: deliveryError } = await supabase
           .from('notification_deliveries')
-          .delete()
-          .eq('notification_key', key)
+          .insert({
+            notification_key: key,
+            user_id: targetUserId,
+            task_id: task.id,
+            moment_id: momentId,
+            trigger_at: triggerAt.toISOString(),
+          })
+
+        if (deliveryError) {
+          skipped += 1
+          continue
+        }
+
+        try {
+          const sentCount = await deliverNotification(supabase, userSettings, task, momentId, key, targetUserId)
+          if (sentCount < 1) throw new Error('No notification channel is available')
+          delivered += 1
+        } catch {
+          failed += 1
+          await supabase
+            .from('notification_deliveries')
+            .delete()
+            .eq('notification_key', key)
+        }
       }
     }
   }
@@ -157,7 +162,7 @@ export default async function handler(request, response) {
   sendJson(response, 200, { ok: true, checked, due, delivered, skipped, failed })
 }
 
-async function deliverNotification(supabase, settings, task, momentId, key) {
+async function deliverNotification(supabase, settings, task, momentId, key, targetUserId) {
   const deliveries = []
 
   if (settings.telegram_enabled && settings.telegram_chat_id) {
@@ -168,7 +173,7 @@ async function deliverNotification(supabase, settings, task, momentId, key) {
     const { data: subscriptions } = await supabase
       .from('push_subscriptions')
       .select('id,subscription')
-      .eq('user_id', task.user_id)
+      .eq('user_id', targetUserId)
       .eq('enabled', true)
 
     for (const row of subscriptions || []) {

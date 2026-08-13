@@ -140,6 +140,16 @@ begin
     return jsonb_build_object('success', false, 'error', 'Recipient user not found');
   end if;
 
+  -- If recipient is a linked account, resolve to primary_user_id if account_links table exists
+  begin
+    select primary_user_id into v_recipient_id
+    from public.account_links
+    where linked_user_id = v_recipient_id
+    limit 1;
+  exception when undefined_table then
+    null;
+  end;
+
   if v_recipient_id = v_task.user_id or v_recipient_id = any(v_task.shared_with_users) then
     return jsonb_build_object('success', false, 'error', 'Task is already shared with this user');
   end if;

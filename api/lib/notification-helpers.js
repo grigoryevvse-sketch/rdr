@@ -61,8 +61,9 @@ export function getMomentDate(task, momentId, timeZone) {
   return start
 }
 
-export function notificationKey(task, momentId) {
-  return `${task.id}:${task.date}:${task.start_time}:${task.duration}:${momentId}`
+export function notificationKey(task, momentId, userId) {
+  const prefix = userId ? `${task.id}:${userId}` : task.id
+  return `${prefix}:${task.date}:${task.start_time}:${task.duration}:${momentId}`
 }
 
 export function isDue(triggerAt, now = Date.now()) {
