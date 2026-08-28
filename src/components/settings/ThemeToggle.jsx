@@ -24,11 +24,11 @@ export default function ThemeToggle() {
       <button
         onClick={() => setTheme(isDark ? 'light' : 'dark')}
         className={`relative w-14 h-8 rounded-full transition-all duration-300 cursor-pointer
-          ${isDark ? 'bg-accent/30' : 'bg-gray-200'}`}
+          ${isDark ? 'bg-accent/25 glass-pill' : 'glass-pill'}`}
       >
         <div className={`absolute top-1 w-6 h-6 rounded-full flex items-center justify-center
                          transition-all duration-300 shadow-md
-                         ${isDark ? 'left-7 bg-accent' : 'left-1 bg-white'}`}>
+                         ${isDark ? 'left-7 bg-accent shadow-lg shadow-accent/30' : 'left-1 bg-white'}`}>
           {isDark ? <Moon size={12} className="text-white" /> : <Sun size={12} className="text-amber-500" />}
         </div>
       </button>

@@ -144,11 +144,9 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
     return [...uniqueOptions.values()].sort((a, b) => timeToMinutes(a) - timeToMinutes(b))
   }, [startTime])
   const fieldClass = theme === 'dark'
-    ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
-    : 'bg-gray-50 border border-gray-200 text-gray-900 focus:border-accent'
-  const panelClass = theme === 'dark'
-    ? 'bg-white/[0.04] border border-white/10'
-    : 'bg-gray-50 border border-gray-200'
+    ? 'glass-input text-white focus:border-accent'
+    : 'glass-input text-gray-900 focus:border-accent'
+  const panelClass = 'glass-panel'
 
   async function handleShare() {
     if (!recipientInput.trim() || !onShare) return
@@ -340,12 +338,11 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
   return (
     <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-xl" onClick={onClose} />
 
       {/* Modal */}
       <div className={`safe-modal-sheet relative w-full max-w-md overflow-y-auto mx-4 rounded-t-3xl md:rounded-3xl p-6
-                       animate-slide-up
-                       ${theme === 'dark' ? 'bg-[#1a1a24] border border-white/10' : 'bg-white border border-gray-200'}`}>
+                       animate-slide-up glass-modal`}>
         {/* Header */}
         <div className="flex items-center justify-between mb-5">
           <h2 className={`text-lg font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -573,8 +570,8 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       ${durationMode === 'preset' && duration === minutes
                         ? 'bg-accent text-white shadow-sm'
                         : theme === 'dark'
-                          ? 'bg-white/5 text-gray-300 hover:bg-white/10'
-                          : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+                          ? 'glass-pill text-gray-300'
+                          : 'glass-pill text-gray-600'}`}
                   >
                     {formatDurationLabel(minutes, language)}
                   </button>
@@ -631,8 +628,8 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                       ${icon === iconName
                         ? 'bg-accent/20 text-accent'
                         : theme === 'dark'
-                          ? 'bg-white/5 text-gray-400 hover:text-white'
-                          : 'bg-gray-100 text-gray-400 hover:text-gray-700'}`}
+                          ? 'glass-pill text-gray-400 hover:text-white'
+                          : 'glass-pill text-gray-400 hover:text-gray-700'}`}
                   >
                     <IC size={16} />
                   </button>
@@ -677,8 +674,8 @@ export default function AddTaskModal({ onClose, onAdd, selectedDate, initialTask
                         ${selected
                           ? 'bg-accent/15 border border-accent/40 text-accent'
                           : theme === 'dark'
-                            ? 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
-                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-100'}`}
+                            ? 'glass-panel text-gray-300'
+                            : 'glass-panel text-gray-700'}`}
                     >
                       <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
                         ${selected ? 'bg-accent text-white' : theme === 'dark' ? 'bg-white/5' : 'bg-gray-100'}`}

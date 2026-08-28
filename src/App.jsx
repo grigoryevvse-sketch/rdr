@@ -193,7 +193,7 @@ function AppContent() {
   // Loading state
   if (authLoading) {
     return (
-      <div className="app-viewport flex items-center justify-center bg-[#0d0d14]">
+      <div className="app-viewport flex items-center justify-center">
         <Loader2 size={32} className="text-accent animate-spin" />
       </div>
     )
@@ -275,8 +275,7 @@ function AppContent() {
   }
 
   return (
-    <div className={`app-viewport flex overflow-hidden
-      ${theme === 'dark' ? 'bg-[#0d0d14]' : 'bg-[#f5f5f7]'}`}>
+    <div className="app-viewport flex overflow-hidden">
       {/* Desktop sidebar */}
       <Sidebar />
 
@@ -288,8 +287,7 @@ function AppContent() {
           </div>
         ) : tasksError && !demoMode ? (
           <div className="flex-1 flex items-center justify-center px-6">
-            <div className={`max-w-md rounded-2xl border p-5 text-center
-              ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-gray-200'}`}>
+            <div className="glass-card max-w-md rounded-2xl p-5 text-center">
               <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                 {language === 'ru' ? 'Синхронизация Supabase не готова' : 'Supabase sync is not ready'}
               </p>

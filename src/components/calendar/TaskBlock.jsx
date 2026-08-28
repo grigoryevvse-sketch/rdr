@@ -116,7 +116,7 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
     <div
       data-task-block
       className="absolute left-16 right-2 rounded-xl px-3 py-2 flex items-center gap-2.5
-                 group transition-all duration-200 hover:scale-[1.01] hover:shadow-lg cursor-grab active:cursor-grabbing touch-none"
+                 group transition-all duration-200 hover:scale-[1.01] hover:shadow-xl cursor-grab active:cursor-grabbing touch-none glass-shimmer"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -125,6 +125,7 @@ export default function TaskBlock({ task, selectedDate, pixelsPerHour, timelineS
         top,
         height,
         backgroundColor: accentSoft,
+        backdropFilter: 'blur(12px)',
         borderLeft: `3px solid ${accentColor}`,
         opacity: isCompleted ? 0.58 : dragPreview ? 0.86 : 1,
       }}

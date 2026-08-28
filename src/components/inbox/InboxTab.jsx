@@ -133,8 +133,7 @@ export default function InboxTab({
           </div>
 
           {/* 4-way toggle */}
-          <div className={`grid grid-cols-4 rounded-xl border p-1 text-xs font-semibold
-            ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-gray-100 border-gray-200'}`}>
+          <div className={`grid grid-cols-4 rounded-xl p-1 text-xs font-semibold glass-panel`}>
             {tabs.map((option) => (
               <button
                 key={option.id}
@@ -213,14 +212,10 @@ export default function InboxTab({
               return (
                 <div
                   key={task.id}
-                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 transition-all
+                  className={`flex items-center gap-3 rounded-2xl px-4 py-3 transition-all glass-shimmer
                     ${isToday
-                      ? theme === 'dark'
-                        ? 'bg-pink-500/10 border border-pink-500/30'
-                        : 'bg-pink-50 border border-pink-200'
-                      : theme === 'dark'
-                        ? 'bg-white/[0.04] border border-white/8 hover:bg-white/[0.07]'
-                        : 'bg-white border border-gray-100 hover:bg-gray-50 shadow-sm'}`}
+                      ? 'glass-card border-pink-500/20'
+                      : 'glass-card'}`}
                 >
                   {/* Icon */}
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0

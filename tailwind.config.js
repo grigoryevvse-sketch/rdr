@@ -14,10 +14,16 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      backdropBlur: {
+        '2xl': '40px',
+        '3xl': '64px',
+      },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
         'scale-in': 'scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'glass-shimmer': 'glassShimmer 1.5s ease-in-out',
+        'ambient-pulse': 'ambientPulse 2s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -31,6 +37,14 @@ export default {
         scaleIn: {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        glassShimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        ambientPulse: {
+          '0%, 100%': { opacity: '0.6' },
+          '50%': { opacity: '1' },
         },
       },
     },

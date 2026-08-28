@@ -117,8 +117,7 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
   const isSchedule = !isBatch && result.intent === 'schedule'
 
   return (
-    <div className={`rounded-2xl p-5 animate-scale-in
-      ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200 shadow-sm'}`}>
+    <div className={`glass-card rounded-2xl p-5 animate-scale-in`}>
       {/* Intent badge */}
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
@@ -130,10 +129,10 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
           <button
             type="button"
             onClick={() => onEditItem?.(0)}
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer glass-pill
               ${theme === 'dark'
-                ? 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900'}`}
+                ? 'text-gray-400 hover:text-white'
+                : 'text-gray-500 hover:text-gray-900'}`}
             title={t(language, 'ai.editSuggestion')}
             aria-label={t(language, 'ai.editSuggestion')}
           >
@@ -148,7 +147,7 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
           {items.map((item, index) => (
             <div
               key={`${item.title}-${index}`}
-              className={`flex items-start gap-3 rounded-xl p-3 ${theme === 'dark' ? 'bg-black/15' : 'bg-gray-50'}`}
+              className={`flex items-start gap-3 rounded-xl p-3 glass-panel`}
             >
               <div className="min-w-0 flex-1">
                 <ResultFields result={item} compact />
@@ -156,10 +155,10 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
               <button
                 type="button"
                 onClick={() => onRemoveItem?.(index)}
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer glass-pill
                   ${theme === 'dark'
-                    ? 'text-gray-500 hover:bg-white/10 hover:text-red-300'
-                    : 'text-gray-400 hover:bg-white hover:text-red-500'}`}
+                    ? 'text-gray-500 hover:text-red-300'
+                    : 'text-gray-400 hover:text-red-500'}`}
                 title={t(language, 'ai.removeSuggestion')}
               >
                 <Trash2 size={16} />
@@ -168,10 +167,10 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
                 <button
                   type="button"
                   onClick={() => onEditItem?.(index)}
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all cursor-pointer glass-pill
                     ${theme === 'dark'
-                      ? 'text-gray-500 hover:bg-white/10 hover:text-white'
-                      : 'text-gray-400 hover:bg-white hover:text-gray-900'}`}
+                      ? 'text-gray-500 hover:text-white'
+                      : 'text-gray-400 hover:text-gray-900'}`}
                   title={t(language, 'ai.editSuggestion')}
                   aria-label={t(language, 'ai.editSuggestion')}
                 >
@@ -198,10 +197,10 @@ export default function ParseResult({ result, onConfirm, onDismiss, onRemoveItem
         </button>
         <button
           onClick={onDismiss}
-          className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer
+          className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer glass-pill
             ${theme === 'dark'
-              ? 'bg-white/5 text-gray-400 hover:bg-white/10'
-              : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+              ? 'text-gray-400 hover:text-gray-300'
+              : 'text-gray-500 hover:text-gray-700'}`}
         >
           <X size={16} />
         </button>

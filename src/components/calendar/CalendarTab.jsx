@@ -95,7 +95,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
       {/* Header */}
       <div className={`safe-header-compact px-6 border-b flex flex-col gap-3 min-h-0
         ${isOverviewOpen ? 'flex-1 pb-20 md:pb-4' : 'pb-4'}
-        ${theme === 'dark' ? 'border-white/5 bg-[#0f0f15]' : 'border-gray-200 bg-white'}`}>
+        glass-nav`}>
         
         <div className="flex items-center justify-between">
           <div>
@@ -115,8 +115,8 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                 ${isToday(selectedDate)
                   ? 'bg-accent/20 border-accent text-accent'
                   : theme === 'dark'
-                    ? 'bg-white/5 border-white/10 text-gray-300 hover:text-white'
-                    : 'bg-gray-100 border-gray-200 text-gray-600 hover:text-gray-800'}`}
+                    ? 'glass-pill text-gray-300 hover:text-white'
+                    : 'glass-pill text-gray-600 hover:text-gray-800'}`}
               title={t(language, 'calendar.openToday')}
             >
               <CalendarDays size={16} />
@@ -130,8 +130,8 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                 ${isOverviewOpen
                   ? 'bg-accent/20 border-accent text-accent'
                   : theme === 'dark'
-                    ? 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
-                    : 'bg-gray-100 border-gray-200 text-gray-500 hover:text-gray-700'}`}
+                    ? 'glass-pill text-gray-400 hover:text-white'
+                    : 'glass-pill text-gray-500 hover:text-gray-700'}`}
               title={t(language, 'calendar.monthOverview')}
             >
               {isOverviewOpen ? <Calendar size={18} /> : <Grid size={18} />}
@@ -158,7 +158,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
           {isOverviewOpen ? (
             /* Month Calendar Grid Overview */
             <div className={`h-full p-3 sm:p-4 rounded-2xl border flex flex-col gap-2 sm:gap-3 animate-fade-in
-              ${theme === 'dark' ? 'bg-[#161622] border-white/5' : 'bg-gray-50 border-gray-100'}`}>
+              glass-card`}>
               
               {/* Month Navigation Row */}
               <div className="flex items-center justify-between px-1">
@@ -169,7 +169,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                   <button
                     onClick={handlePrevMonth}
                     className={`p-1.5 rounded-lg transition-colors cursor-pointer
-                      ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600'}`}
+                      ${theme === 'dark' ? 'hover:bg-white/[0.06] text-gray-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600'}`}
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -183,7 +183,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                   <button
                     onClick={handleNextMonth}
                     className={`p-1.5 rounded-lg transition-colors cursor-pointer
-                      ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600'}`}
+                      ${theme === 'dark' ? 'hover:bg-white/[0.06] text-gray-400 hover:text-white' : 'hover:bg-gray-200 text-gray-600'}`}
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -226,8 +226,8 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                               ? 'bg-accent/10 border border-accent/30 text-accent font-semibold'
                               : 'bg-accent/10 border border-accent/20 text-accent font-semibold'
                             : isCurrentMonth
-                              ? theme === 'dark' ? 'text-gray-200 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-200/50'
-                            : theme === 'dark' ? 'text-gray-600 hover:bg-white/5' : 'text-gray-300 hover:bg-gray-200/50'
+                              ? theme === 'dark' ? 'text-gray-200 hover:bg-white/[0.06]' : 'text-gray-700 hover:bg-gray-200/50'
+                            : theme === 'dark' ? 'text-gray-600 hover:bg-white/[0.06]' : 'text-gray-300 hover:bg-gray-200/50'
                         }`}
                     >
                       <span className="text-xs leading-none text-center shrink-0">{format(day, 'd')}</span>
@@ -294,7 +294,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                   <button
                     onClick={handlePrevMonthDay}
                     className={`p-1 rounded-lg transition-colors cursor-pointer
-                      ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-155 text-gray-600'}`}
+                      ${theme === 'dark' ? 'hover:bg-white/[0.06] text-gray-400 hover:text-white' : 'hover:bg-gray-155 text-gray-600'}`}
                     title={language === 'ru' ? 'Предыдущий месяц' : 'Previous Month'}
                   >
                     <ChevronLeft size={14} />
@@ -302,7 +302,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                   <button
                     onClick={handleNextMonthDay}
                     className={`p-1 rounded-lg transition-colors cursor-pointer
-                      ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-155 text-gray-600'}`}
+                      ${theme === 'dark' ? 'hover:bg-white/[0.06] text-gray-400 hover:text-white' : 'hover:bg-gray-155 text-gray-600'}`}
                     title={language === 'ru' ? 'Следующий месяц' : 'Next Month'}
                   >
                     <ChevronRight size={14} />
@@ -314,7 +314,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                 <button
                   onClick={handlePrevWeek}
                   className={`p-2 rounded-xl transition-colors cursor-pointer
-                    ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+                    ${theme === 'dark' ? 'hover:bg-white/[0.06] text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
                   title={language === 'ru' ? 'Предыдущая неделя' : 'Previous Week'}
                 >
                   <ChevronLeft size={18} />
@@ -332,13 +332,13 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                         onClick={() => selectDate(dateStr)}
                         className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer
                           ${isDaySelected
-                            ? 'bg-accent text-white font-semibold shadow-sm scale-105'
+                            ? 'bg-accent text-white font-semibold shadow-sm scale-105 glass-shimmer'
                             : isDayToday
                               ? theme === 'dark'
                                 ? 'bg-accent/15 border border-accent/30 text-accent font-semibold'
                                 : 'bg-accent/15 border border-accent/20 text-accent font-semibold'
                               : theme === 'dark'
-                                ? 'hover:bg-white/5 text-gray-400 hover:text-gray-200'
+                                ? 'hover:bg-white/[0.06] text-gray-400 hover:text-gray-200'
                                 : 'hover:bg-gray-100 text-gray-500 hover:text-gray-800'
                           }`}
                       >
@@ -356,7 +356,7 @@ export default function CalendarTab({ scheduledTasks, onAddTask, onUpdateTask, o
                 <button
                   onClick={handleNextWeek}
                   className={`p-2 rounded-xl transition-colors cursor-pointer
-                    ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+                    ${theme === 'dark' ? 'hover:bg-white/[0.06] text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
                   title={language === 'ru' ? 'Следующая неделя' : 'Next Week'}
                 >
                   <ChevronRight size={18} />

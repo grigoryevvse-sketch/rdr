@@ -40,8 +40,7 @@ export default function PromptInput({ onSubmit, isProcessing }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       {image && (
-        <div className={`flex items-center gap-3 rounded-2xl p-3
-          ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
+        <div className={`flex items-center gap-3 rounded-2xl p-3 glass-card`}>
           <img
             src={image.previewUrl}
             alt=""
@@ -58,10 +57,10 @@ export default function PromptInput({ onSubmit, isProcessing }) {
           <button
             type="button"
             onClick={() => setImage(null)}
-            className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all cursor-pointer
+            className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all cursor-pointer glass-pill
               ${theme === 'dark'
-                ? 'bg-white/5 text-gray-400 hover:bg-white/10'
-                : 'bg-white text-gray-500 hover:bg-gray-100'}`}
+                ? 'text-gray-400 hover:text-gray-300'
+                : 'text-gray-500 hover:text-gray-700'}`}
             title={t(language, 'ai.removeImage')}
           >
             <X size={16} />
@@ -81,18 +80,18 @@ export default function PromptInput({ onSubmit, isProcessing }) {
         }}
         placeholder={t(language, 'ai.placeholder')}
         rows={3}
-        className={`w-full px-4 py-4 pr-28 rounded-2xl text-sm resize-none outline-none transition-all
+        className={`w-full px-4 py-4 pr-28 rounded-2xl text-sm resize-none outline-none transition-all glass-input focus:shadow-[0_0_20px_var(--color-accent-light)]
           ${theme === 'dark'
-            ? 'bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-accent focus:shadow-[0_0_20px_var(--color-accent-light)]'
-            : 'bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-accent focus:shadow-[0_0_20px_var(--color-accent-light)]'}`}
+            ? 'text-white placeholder-gray-500'
+            : 'text-gray-900 placeholder-gray-400'}`}
       />
       <label
         className={`absolute bottom-3 right-14 w-10 h-10 rounded-xl
                    flex items-center justify-center active:scale-95
-                   transition-all cursor-pointer
+                   transition-all cursor-pointer glass-pill
                    ${theme === 'dark'
-                     ? 'bg-white/5 text-gray-300 hover:bg-white/10'
-                     : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'}`}
+                     ? 'text-gray-300 hover:text-white'
+                     : 'text-gray-500 hover:text-gray-700'}`}
         title={t(language, 'ai.attachImage')}
       >
         <Image size={16} />

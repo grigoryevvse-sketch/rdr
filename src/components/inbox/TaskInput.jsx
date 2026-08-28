@@ -20,10 +20,10 @@ export default function TaskInput({ onAdd }) {
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={language === 'ru' ? 'Добавить задачу... Enter ↵' : 'Add a task... press Enter ↵'}
-        className={`flex-1 px-4 py-3 rounded-xl text-sm outline-none transition-all
+        className={`flex-1 px-4 py-3 rounded-xl text-sm outline-none transition-all glass-input
           ${theme === 'dark'
-            ? 'bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:border-accent'
-            : 'bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-accent'}`}
+            ? 'text-white placeholder-gray-500 focus:border-accent'
+            : 'text-gray-900 placeholder-gray-400 focus:border-accent'}`}
       />
       <button
         type="submit"

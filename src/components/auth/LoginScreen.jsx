@@ -7,9 +7,9 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured, inT
   const isConnectingGoogle = authAction === 'google-link'
 
   return (
-    <div className="app-viewport flex items-center justify-center bg-[#0d0d14] relative overflow-hidden">
+    <div className="app-viewport flex items-center justify-center relative overflow-hidden">
       {/* Ambient glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full opacity-20"
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full opacity-30 blur-[120px]"
            style={{ background: 'radial-gradient(circle, var(--color-accent), transparent 70%)' }} />
 
       <div className="relative z-10 text-center animate-fade-in">
@@ -28,8 +28,8 @@ export default function LoginScreen({ onSignIn, authError, isAuthConfigured, inT
         <button
           onClick={onSignIn}
           disabled={!isAuthConfigured || isConnectingGoogle}
-          className="flex items-center gap-3 mx-auto px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-sm
-                     border border-white/10 text-white font-medium text-base
+          className="flex items-center gap-3 mx-auto px-8 py-4 rounded-2xl glass-card glass-shimmer
+                     text-white font-medium text-base
                      hover:bg-white/15 hover:border-white/20 active:scale-95
                      transition-all duration-200 cursor-pointer
                      disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white/10 disabled:active:scale-100"

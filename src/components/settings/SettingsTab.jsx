@@ -233,8 +233,7 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
       <div className="safe-scroll-bottom flex-1 overflow-y-auto px-6 pt-6 space-y-6">
         {/* Account section */}
         {user && (
-          <div className={`rounded-2xl p-4
-            ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'}`}>
+          <div className={`glass-card rounded-2xl p-4`}>
             <div className="flex items-center gap-2 mb-4">
               <User size={16} className="text-accent" />
               <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -291,10 +290,10 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                         setUsernameSuccess(false)
                       }}
                       placeholder="username"
-                      className={`w-full pl-7 pr-3 py-2 rounded-xl text-sm outline-none
+                      className={`w-full pl-7 pr-3 py-2 rounded-xl text-sm outline-none glass-input
                         ${theme === 'dark'
-                          ? 'bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:border-accent'
-                          : 'bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-accent'}`}
+                          ? 'text-white placeholder:text-gray-600 focus:border-accent'
+                          : 'text-gray-900 placeholder:text-gray-400 focus:border-accent'}`}
                     />
                   </div>
                   <button
@@ -324,7 +323,7 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
             )}
 
             {showGoogleConnect ? (
-              <div className={`mt-4 rounded-2xl p-3 ${theme === 'dark' ? 'bg-white/[0.04] border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
+              <div className={`mt-4 rounded-2xl p-3 glass-panel`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -338,11 +337,11 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                     type="button"
                     onClick={connectGoogle}
                     disabled={googleConnectStatus === 'connecting'}
-                    className={`h-9 px-3 rounded-xl flex items-center gap-2 text-xs font-semibold transition cursor-pointer shrink-0
+                    className={`h-9 px-3 rounded-xl flex items-center gap-2 text-xs font-semibold transition cursor-pointer shrink-0 glass-pill
                       disabled:cursor-not-allowed disabled:opacity-60
                       ${theme === 'dark'
-                        ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
+                        ? 'text-gray-300 hover:text-white'
+                        : 'text-gray-700 hover:text-gray-900'}`}
                   >
                     {googleConnectStatus === 'connecting' ? <Loader2 size={14} className="animate-spin" /> : <Link size={14} />}
                     {googleConnectStatus === 'connecting' ? t(language, 'settings.connecting') : t(language, 'settings.connect')}
@@ -355,7 +354,7 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                 ) : null}
               </div>
             ) : googleConnected ? (
-              <div className={`mt-4 rounded-2xl p-3 flex items-center gap-3 ${theme === 'dark' ? 'bg-white/[0.04] border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
+              <div className={`mt-4 rounded-2xl p-3 flex items-center gap-3 glass-panel`}>
                 <span className="w-8 h-8 rounded-xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
                   <Check size={15} />
                 </span>
@@ -373,8 +372,7 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
         )}
 
         {/* Appearance */}
-        <div className={`rounded-2xl p-4
-          ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'}`}>
+        <div className={`glass-card rounded-2xl p-4`}>
           <div className="flex items-center gap-2 mb-4">
             <Monitor size={16} className="text-accent" />
             <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
@@ -385,8 +383,7 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
         </div>
 
         {/* Language */}
-        <div className={`rounded-2xl p-4
-          ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'}`}>
+        <div className={`glass-card rounded-2xl p-4`}>
           <div className="flex items-center gap-2 mb-4">
             <Languages size={16} className="text-accent" />
             <div>
@@ -398,8 +395,7 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
               </p>
             </div>
           </div>
-          <div className={`grid grid-cols-2 rounded-xl border p-1 text-xs font-semibold
-            ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-gray-100 border-gray-200'}`}>
+          <div className={`grid grid-cols-2 rounded-xl p-1 text-xs font-semibold glass-panel`}>
             {LANGUAGES.map((option) => (
               <button
                 key={option.id}
@@ -419,8 +415,7 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
         </div>
 
         {/* Notifications */}
-        <div className={`rounded-2xl p-4
-          ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'}`}>
+        <div className={`glass-card rounded-2xl p-4`}>
           <div className="flex items-center justify-between gap-4 mb-4">
             <div className="flex items-center gap-2 min-w-0">
               <BellRing size={16} className="text-accent shrink-0" />
@@ -441,17 +436,17 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                 ${notificationsOn
                   ? 'bg-accent text-white'
                   : theme === 'dark'
-                    ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'}`}
+                    ? 'glass-pill text-gray-300 hover:text-white'
+                    : 'glass-pill text-gray-700 hover:text-gray-900'}`}
             >
               {notificationsOn ? <Bell size={14} /> : <BellOff size={14} />}
               {notificationsOn ? t(language, 'common.on') : t(language, 'common.enable')}
             </button>
           </div>
 
-          <div className={`rounded-2xl p-3 mb-3 ${theme === 'dark' ? 'bg-white/[0.04] border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
+          <div className={`rounded-2xl p-3 mb-3 glass-panel`}>
             <div className="flex items-start gap-3">
-              <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${theme === 'dark' ? 'bg-white/5 text-gray-300' : 'bg-white text-gray-600 border border-gray-200'}`}>
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 glass-pill ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 <Smartphone size={16} />
               </span>
               <div className="min-w-0">
@@ -465,9 +460,9 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
             </div>
           </div>
 
-          <div className={`rounded-2xl p-3 mb-4 ${theme === 'dark' ? 'bg-white/[0.04] border border-white/10' : 'bg-gray-50 border border-gray-200'}`}>
+          <div className={`rounded-2xl p-3 mb-4 glass-panel`}>
             <div className="flex items-start gap-3">
-              <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${theme === 'dark' ? 'bg-white/5 text-gray-300' : 'bg-white text-gray-600 border border-gray-200'}`}>
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 glass-pill ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                 <Send size={16} />
               </span>
               <div className="min-w-0 flex-1">
@@ -488,8 +483,8 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                       ${telegramOn
                         ? 'bg-accent text-white'
                         : theme === 'dark'
-                          ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                          : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
+                          ? 'glass-pill text-gray-300 hover:text-white'
+                          : 'glass-pill text-gray-700 hover:text-gray-900'}`}
                   >
                     {telegramOn ? <Bell size={14} /> : <BellOff size={14} />}
                     {telegramOn ? t(language, 'common.on') : t(language, 'common.off')}
@@ -501,10 +496,10 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                   value={telegramChatId}
                   onChange={(event) => updateTelegramChatId(event.target.value)}
                   placeholder={t(language, 'settings.chatId')}
-                  className={`mt-3 w-full px-3 py-2.5 rounded-xl text-sm outline-none
+                  className={`mt-3 w-full px-3 py-2.5 rounded-xl text-sm outline-none glass-input
                     ${theme === 'dark'
-                      ? 'bg-white/5 border border-white/10 text-white placeholder:text-gray-600 focus:border-accent'
-                      : 'bg-white border border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-accent'}`}
+                      ? 'text-white placeholder:text-gray-600 focus:border-accent'
+                      : 'text-gray-900 placeholder:text-gray-400 focus:border-accent'}`}
                 />
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <p className={`text-xs ${telegramTestStatus === 'failed'
@@ -524,10 +519,10 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                     type="button"
                     onClick={sendTelegramTest}
                     disabled={!telegramChatId.trim() || telegramTestStatus === 'sending'}
-                    className={`h-9 px-3 rounded-xl flex items-center gap-2 text-xs font-semibold transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50
+                    className={`h-9 px-3 rounded-xl flex items-center gap-2 text-xs font-semibold transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 glass-pill
                       ${theme === 'dark'
-                        ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
-                        : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'}`}
+                        ? 'text-gray-300 hover:text-white'
+                        : 'text-gray-700 hover:text-gray-900'}`}
                   >
                     <Send size={14} />
                     {t(language, 'settings.sendTest')}
@@ -558,8 +553,8 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                       ${selected
                         ? 'bg-accent/15 border border-accent/40 text-accent'
                         : theme === 'dark'
-                          ? 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
-                          : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'}`}
+                          ? 'glass-pill text-gray-300 hover:text-white'
+                          : 'glass-pill text-gray-700 hover:text-gray-900'}`}
                   >
                     <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${selected ? 'bg-accent text-white' : theme === 'dark' ? 'bg-white/5' : 'bg-white'}`}>
                       {selected && <Check size={14} />}
@@ -569,12 +564,10 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                 )
               })}
 
-              <div className={`rounded-xl border sm:col-span-2 p-3 transition
+              <div className={`rounded-xl sm:col-span-2 p-3 transition
                 ${customReminderMinutes.length
-                  ? 'bg-accent/10 border-accent/30'
-                  : theme === 'dark'
-                    ? 'bg-white/5 border-white/10'
-                    : 'bg-gray-50 border-gray-200'}`}
+                  ? 'bg-accent/10 border border-accent/30'
+                  : 'glass-panel'}`}
               >
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="min-w-0">
@@ -604,19 +597,19 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                         value={reminder.value}
                         onChange={(e) => updateCustomDefaultReminder(minutes, e.target.value, reminder.unit)}
                         aria-label={`Custom reminder ${formatMinutesBefore(minutes)}`}
-                        className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none
+                        className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none glass-input
                           ${theme === 'dark'
-                            ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
-                            : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
+                            ? 'text-white focus:border-accent'
+                            : 'text-gray-900 focus:border-accent'}`}
                       />
                       <select
                         value={reminder.unit}
                         onChange={(e) => updateCustomDefaultReminder(minutes, reminder.value, e.target.value)}
                         aria-label={`Custom reminder unit for ${formatMinutesBefore(minutes)}`}
-                        className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer
+                        className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer glass-input
                           ${theme === 'dark'
-                            ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
-                            : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
+                            ? 'text-white focus:border-accent'
+                            : 'text-gray-900 focus:border-accent'}`}
                       >
                         {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
                           <option key={unit.value} value={unit.value}>{language === 'ru' ? UNIT_LABELS_RU[unit.value] || unit.label : unit.label}</option>
@@ -626,10 +619,10 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                         type="button"
                         onClick={() => removeCustomDefaultMoment(minutes)}
                         aria-label={`Remove ${formatMinutesBefore(minutes)}`}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition cursor-pointer
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition cursor-pointer glass-pill
                           ${theme === 'dark'
-                            ? 'bg-white/5 text-gray-400 hover:bg-red-500/10 hover:text-red-300 border border-white/10'
-                            : 'bg-white text-gray-500 hover:bg-red-50 hover:text-red-500 border border-gray-200'}`}
+                            ? 'text-gray-400 hover:bg-red-500/10 hover:text-red-300'
+                            : 'text-gray-500 hover:bg-red-50 hover:text-red-500'}`}
                       >
                         <Trash2 size={15} />
                       </button>
@@ -645,19 +638,19 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
                       value={newCustomReminderValue}
                       onChange={(e) => setNewCustomReminderValue(Math.max(1, Number(e.target.value) || 1))}
                       aria-label={language === 'ru' ? 'Новое своё напоминание' : 'New custom reminder amount'}
-                      className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none
+                      className={`w-full px-3 py-2.5 rounded-xl text-sm outline-none glass-input
                         ${theme === 'dark'
-                          ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
-                          : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
+                          ? 'text-white focus:border-accent'
+                          : 'text-gray-900 focus:border-accent'}`}
                     />
                     <select
                       value={newCustomReminderUnit}
                       onChange={(e) => setNewCustomReminderUnit(e.target.value)}
                       aria-label={language === 'ru' ? 'Единица нового напоминания' : 'New custom reminder unit'}
-                      className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer
+                      className={`w-full px-2 py-2.5 rounded-xl text-sm outline-none cursor-pointer glass-input
                         ${theme === 'dark'
-                          ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
-                          : 'bg-white border border-gray-200 text-gray-900 focus:border-accent'}`}
+                          ? 'text-white focus:border-accent'
+                          : 'text-gray-900 focus:border-accent'}`}
                     >
                       {CUSTOM_NOTIFICATION_UNITS.map((unit) => (
                         <option key={unit.value} value={unit.value}>{language === 'ru' ? UNIT_LABELS_RU[unit.value] || unit.label : unit.label}</option>
@@ -687,8 +680,7 @@ export default function SettingsTab({ user, onSignOut, onConnectGoogle, notifica
         </div>
 
         {/* Accent Color */}
-        <div className={`rounded-2xl p-4
-          ${theme === 'dark' ? 'bg-white/5 border border-white/10' : 'bg-white border border-gray-200'}`}>
+        <div className={`glass-card rounded-2xl p-4`}>
           <div className="flex items-center gap-2 mb-4">
             <Palette size={16} className="text-accent" />
             <h2 className={`text-sm font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>

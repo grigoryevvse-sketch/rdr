@@ -148,10 +148,10 @@ export default function AITab({ onAddScheduled, onAddInbox }) {
               <button
                 key={i}
                 onClick={() => handleSubmit(prompt)}
-                className={`text-xs px-3 py-2 rounded-xl transition-all cursor-pointer
+                className={`text-xs px-3 py-2 rounded-xl transition-all cursor-pointer glass-pill glass-shimmer
                   ${theme === 'dark'
-                    ? 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/5'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+                    ? 'text-gray-300 hover:text-white'
+                    : 'text-gray-600 hover:text-gray-900'}`}
               >
                 "{prompt}"
               </button>

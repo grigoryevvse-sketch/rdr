@@ -13,7 +13,7 @@ export default function AccentPicker() {
           <button
             key={hex}
             onClick={() => setAccent(hex)}
-            className="flex flex-col items-center gap-2 cursor-pointer group"
+            className="flex flex-col items-center gap-2 cursor-pointer group glass-shimmer rounded-xl p-1"
             title={name}
           >
             <div

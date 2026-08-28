@@ -38,8 +38,7 @@ export default function TaskItem({ task, detail, badge, onToggle, onDelete, onSc
       role={(canSchedule || canEdit) ? 'button' : undefined}
       tabIndex={(canSchedule || canEdit) ? 0 : undefined}
       title={canSchedule ? t(language, 'inbox.clickToSchedule') : (canEdit ? (language === 'ru' ? 'Редактировать событие' : 'Edit event') : undefined)}
-      className={`flex items-center gap-3 px-3 py-3 rounded-xl group transition-all duration-200 outline-none
-      ${theme === 'dark' ? 'hover:bg-white/5' : 'hover:bg-gray-50'}
+      className={`flex items-center gap-3 px-3 py-3 rounded-xl group transition-all duration-200 outline-none hover:bg-white/[0.05]
       ${(canSchedule || canEdit) ? 'cursor-pointer focus-visible:ring-2 focus-visible:ring-accent/60' : ''}
       ${task.completed ? 'opacity-50' : ''}`}
     >
@@ -60,8 +59,8 @@ export default function TaskItem({ task, detail, badge, onToggle, onDelete, onSc
             {task.title}
           </span>
           {badge && (
-            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold
-              ${theme === 'dark' ? 'bg-white/5 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold glass-pill
+              ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
               {badge}
             </span>
           )}

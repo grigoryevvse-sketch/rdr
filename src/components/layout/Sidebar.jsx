@@ -15,10 +15,9 @@ export default function Sidebar() {
   const { activeTab, setTab, theme, language } = useApp()
 
   return (
-    <aside className={`hidden md:flex flex-col w-[72px] items-center py-6 gap-2 border-r
-      ${theme === 'dark' ? 'bg-[#111118] border-white/5' : 'bg-white border-gray-200'}`}>
+    <aside className="hidden md:flex flex-col w-[72px] items-center py-6 gap-2 border-r glass-nav">
       {/* App icon */}
-      <img src="/favicon.svg" alt="" className="w-10 h-10 rounded-xl mb-6 shadow-lg shadow-accent/20" />
+      <img src="/favicon.svg" alt="" className="w-10 h-10 rounded-xl mb-6 shadow-lg shadow-accent/30" />
 
       {/* Nav items */}
       {navItems.map(({ id, Icon }) => {
@@ -31,9 +30,9 @@ export default function Sidebar() {
             className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center gap-0.5
                         transition-all duration-200 cursor-pointer group relative
                         ${isActive
-                          ? 'text-accent bg-accent/10'
+                          ? 'text-accent glass-pill bg-accent/10'
                           : theme === 'dark'
-                            ? 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+                            ? 'text-gray-500 hover:text-gray-300 hover:bg-white/[0.06]'
                             : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
                         }`}
             title={translatedLabel}

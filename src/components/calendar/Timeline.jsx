@@ -74,7 +74,7 @@ export default function Timeline({ tasks, selectedDate, onUpdateTask, onEditTask
             </span>
             {/* Divider line */}
             <div className={`flex-1 border-t mt-2.5
-              ${theme === 'dark' ? 'border-white/5' : 'border-gray-100'}`} />
+              ${theme === 'dark' ? 'border-white/[0.04]' : 'border-gray-100/60'}`} />
           </div>
         ))}
 

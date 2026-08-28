@@ -95,7 +95,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
 
   return (
     <div className="flex flex-col h-full">
-      <div className={`safe-header px-6 pb-5 border-b ${theme === 'dark' ? 'border-white/5 bg-[#0f0f15]' : 'border-gray-200 bg-white'}`}>
+      <div className="safe-header px-6 pb-5 border-b glass-nav">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -117,9 +117,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
               className={`h-10 px-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer
                 ${isToday(selectedDate)
                   ? 'bg-accent/20 border-accent text-accent'
-                  : theme === 'dark'
-                    ? 'bg-white/5 border-white/10 text-gray-300 hover:text-white'
-                    : 'bg-gray-100 border-gray-200 text-gray-600 hover:text-gray-800'}`}
+                  : `glass-pill border-transparent ${theme === 'dark' ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-800'}`}`}
             >
               {t(language, 'common.today')}
             </button>
@@ -139,19 +137,19 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
         <div className="mt-4 flex items-center gap-2">
           <button
             onClick={() => selectDate(subDays(selectedDate, 1))}
-            className={`p-2 rounded-xl transition-colors cursor-pointer ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+            className={`p-2 rounded-xl transition-colors cursor-pointer ${theme === 'dark' ? 'hover:bg-white/[0.06] text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
             title={language === 'ru' ? 'Предыдущий день' : 'Previous day'}
           >
             <ChevronLeft size={18} />
           </button>
-          <div className={`flex-1 rounded-xl px-4 py-2 text-center border ${theme === 'dark' ? 'bg-white/[0.03] border-white/10 text-gray-200' : 'bg-gray-50 border-gray-200 text-gray-700'}`}>
+          <div className={`flex-1 rounded-xl px-4 py-2 text-center glass-panel ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
             <span className="text-xs font-semibold">{firstHour}</span>
             <span className={`mx-2 ${theme === 'dark' ? 'text-gray-600' : 'text-gray-300'}`}>-</span>
             <span className="text-xs font-semibold">{lastHour}</span>
           </div>
           <button
             onClick={() => selectDate(addDays(selectedDate, 1))}
-            className={`p-2 rounded-xl transition-colors cursor-pointer ${theme === 'dark' ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
+            className={`p-2 rounded-xl transition-colors cursor-pointer ${theme === 'dark' ? 'hover:bg-white/[0.06] text-gray-400 hover:text-white' : 'hover:bg-gray-100 text-gray-600'}`}
             title={language === 'ru' ? 'Следующий день' : 'Next day'}
           >
             <ChevronRight size={18} />
@@ -167,7 +165,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
           </div>
         ) : (
           <div className="relative max-w-4xl mx-auto">
-            <div className={`absolute left-[4.65rem] top-5 bottom-5 w-px ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'}`} />
+            <div className={`absolute left-[4.65rem] top-5 bottom-5 w-px glass-panel border-r`} />
 
             <div className="space-y-4">
               {dailyTasks.map((task) => {
@@ -185,11 +183,8 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
 
                     <button
                       onClick={() => setEditingTask(task)}
-                      className={`min-w-0 text-left rounded-2xl px-4 py-3 border transition-all cursor-pointer
-                        ${isCompleted ? 'opacity-55' : ''}
-                        ${theme === 'dark'
-                          ? 'bg-white/[0.04] border-white/10 hover:bg-white/[0.07]'
-                          : 'bg-white border-gray-200 hover:bg-gray-50'}`}
+                      className={`min-w-0 text-left rounded-2xl px-4 py-3 transition-all cursor-pointer glass-card glass-shimmer
+                        ${isCompleted ? 'opacity-55' : ''}`}
                     >
                       <div className="flex items-start gap-3">
                         <div
@@ -239,7 +234,7 @@ export default function TimelineTab({ scheduledTasks, onAddTask, onUpdateTask, o
                           ${isCompleted
                             ? 'bg-accent text-white border-2 border-accent'
                             : theme === 'dark'
-                              ? 'border-2 border-white/15 text-gray-500 hover:text-accent hover:border-accent/60 hover:bg-accent/10'
+                              ? 'border-2 border-white/10 glass-pill text-gray-500 hover:text-accent hover:border-accent/60 hover:bg-accent/10'
                               : 'border-2 border-gray-200 text-gray-300 hover:text-accent hover:border-accent/50 hover:bg-accent/10'}`}
                         title={isCompleted
                           ? (language === 'ru' ? 'Сделать активной' : 'Mark task active')
